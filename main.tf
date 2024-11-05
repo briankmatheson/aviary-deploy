@@ -1,10 +1,10 @@
 provider "helm" {
   kubernetes {
-    config_path = "/home/bmath/k8s/u51/kubeconfig.yaml"
+    config_path = "/home/bmath/k8s/u98/kubeconfig.yaml"
   }
 }
 provider "kubernetes" {
-  config_path = "/home/bmath/k8s/u51/kubeconfig.yaml"
+  config_path = "/home/bmath/k8s/u98/kubeconfig.yaml"
 }
 
 resource "helm_release" "metallb" {
@@ -22,7 +22,7 @@ resource "kubernetes_manifest" "metallb-ip" {
       "namespace" = "metallb-system"
     }
     "spec"        = {
-      "addresses" = [ "10.23.55.8/32" ]
+      "addresses" = [ "10.23.98.8/32" ]
     }
   }
 }
@@ -39,24 +39,6 @@ resource "helm_release" "nginx-ingress" {
   }
 }
 
-resource "kubernetes_service_v1" "nginx-ingress" {
-  metadata {
-    name = "nginx-ingress"
-    namespace = "kube-system"
-  }
-  spec {
-    port {
-      name        = "https"
-      protocol    = "TCP"
-      port        = 443
-      target_port = "https"
-    }
-    type = "LoadBalancer"
-  }
-  depends_on = [
-    helm_release.nginx-ingress
-  ]
-}
 
 resource "helm_release" "nfs" {
   name       = "csi-driver-nfs"
@@ -66,7 +48,7 @@ resource "helm_release" "nfs" {
 }
 resource "kubernetes_storage_class" "nfs" {
   metadata {
-    name = "nfs"
+    name = "fast-nfs"
     annotations = {
       "storageclass.kubernetes.io/is-default-class" = "true"
     }
@@ -74,8 +56,8 @@ resource "kubernetes_storage_class" "nfs" {
   storage_provisioner = "nfs.csi.k8s.io"
   reclaim_policy      = "Delete"
   parameters = {
-    server = "10.23.55.1"
-    share = "/export/gram-vg--nfs"
+    server = "10.23.98.1"
+    share = "/export/fast-nfs"
   }
   mount_options = ["nfsvers=4.2"]
   depends_on = [
@@ -126,8 +108,8 @@ resource "kubernetes_ingress" "gitea" {
 
 resource "helm_release" "minio" {
   name       = "minio"
-  repository = "https://charts.min.io/"
-  chart      = "minio"
+  repository = "https://operator.min.io"
+  chart      = "minio-operator"
   namespace  = "minio"
   create_namespace = true
 
@@ -137,19 +119,19 @@ resource "helm_release" "minio" {
   }
   set {
     name  = "rootPassword"
-    value = "r"
+   value = "r"
   }
   set {
     name  = "resources.requests.memory"
     value = "512Mi"
   }
   set {
-    name  = "replicas"
+    name  = "servers"
     value = "1"
   }
   set {
-    name  = "persistence.enabled"
-    value = "true"
+    name  = "storageClassName"
+    value = "fast-nfs"
   }
   set {
     name  = "mode"
@@ -159,32 +141,32 @@ resource "helm_release" "minio" {
     helm_release.nfs
   ]
 }
-resource "kubernetes_ingress" "minio" {
-  metadata {
-    name = "minio"
-    namespace = "minio"
-  }
-  spec {
-    ingress_class_name = "nginx"
-    rule {
-      http {
-        path {
-          path = "/*"
-          backend {
-            service_name = "minio-http"
-            service_port =  3000
-          }
-        }
-      }
-    }
-  }
-  depends_on = [
-    helm_release.minio
-  ]
-}
+# resource "kubernetes_ingress" "minio" {
+#   metadata {
+#     name = "minio"
+#     namespace = "minio"
+#   }
+#   spec {
+#     ingress_class_name = "nginx"
+#     rule {
+#       http {
+#         path {
+#           path = "/*"
+#           backend {
+#             service_name = "minio-http"
+#             service_port =  3000
+#           }
+#         }
+#       }
+#     }
+#   }
+#   depends_on = [
+#     helm_release.minio
+#   ]
+# }
 
 
-# resource "helm_release" "velero" {
+# Resource "Helm_Release" "Velero" {
 #   name       = "velero"
 #   repository = "https://vmware-tanzu.github.io/helm-charts"
 #   chart      = "velero"
