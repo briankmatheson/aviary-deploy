@@ -29,11 +29,12 @@ resource "kubernetes_manifest" "metallb-ip" {
 }
 
 
-resource "helm_release" "nginx-ingress" {
-  name       = "nginx-ingress-controller"
-  repository = "https://charts.bitnami.com/bitnami"
-  chart      = "nginx-ingress-controller"
-  namespace  = "kube-system"
+resource "helm_release" "ingress-nginx" {
+  name       = "ingress-nginx"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+  namespace  = "ingress-nginx"
+  create_namespace = true
   set {
     name  = "service.type"
     value = "LoadBalancer"
@@ -66,7 +67,25 @@ resource "kubernetes_storage_class" "nfs" {
     helm_release.nfs
   ]
 }
-
+resource "kubernetes_storage_class" "standard" {
+  metadata {
+    name = "standard"
+    annotations = {
+      "storageclass.kubernetes.io/is-default-class" = "true"
+    }
+  }
+  storage_provisioner = "nfs.csi.k8s.io"
+  reclaim_policy      = "Delete"
+  volume_binding_mode = "WaitForFirstConsumer"
+  parameters = {
+    server = "10.23.98.1"
+    share = "/export/fast-nfs"
+  }
+  mount_options = ["nfsvers=4.2"]
+  depends_on = [
+    helm_release.nfs
+  ]
+}
 
 resource "helm_release" "gitea" {
   name       = "gitea"
@@ -74,6 +93,7 @@ resource "helm_release" "gitea" {
   chart      = "gitea"
   namespace  = "gitea"
   create_namespace = true
+
   
   set {
     name  = "service.type"
@@ -83,7 +103,7 @@ resource "helm_release" "gitea" {
     helm_release.nfs
   ]
 }
-resource "kubernetes_ingress" "gitea" {
+resource "kubernetes_ingress_v1" "gitea" {
   wait_for_load_balancer = true
   metadata {
     name = "gitea"
@@ -93,22 +113,26 @@ resource "kubernetes_ingress" "gitea" {
     }
   }
   spec {
+    ingress_class_name = "nginx"
     rule {
       host = "gitea.local"
       http {
         path {
-          path = "/*"
+          path = "/"
           backend {
-            service_name = "gitea-http"
-            service_port =  3000
+            service {
+	      name = "gitea-http"
+              port {
+		number = 3000
+	      }
+	    }
           }
         }
       }
     }
   }
   depends_on = [
-    helm_release.gitea,
-    helm_release.nginx-ingress
+    helm_release.ingress-nginx
   ]
 }
 
@@ -152,7 +176,8 @@ resource "helm_release" "minio" {
     helm_release.nfs
   ]
 }
-resource "kubernetes_ingress" "minio" {
+resource "kubernetes_ingress_v1" "minio" {
+  wait_for_load_balancer = true
   metadata {
     name = "minio"
     namespace = "minio"
@@ -163,10 +188,14 @@ resource "kubernetes_ingress" "minio" {
       host = "minio.local"
       http {
         path {
-          path = "/*"
+          path = "/"
           backend {
-            service_name = "minio1-hl"
-            service_port =  9000
+            service {
+	      name = "minio1-hl"
+              port {
+		number = 9000
+	      }
+	    }
           }
         }
       }
@@ -175,18 +204,21 @@ resource "kubernetes_ingress" "minio" {
       host = "minio-console.local"
       http {
 	path {
-          path = "/*"
+          path = "/"
           backend {
-            service_name = "minio1-console"
-            service_port =  9443
+            service {
+	      name = "minio1-console"
+              port {
+		number = 9443
+	      }
+	    }
           }
 	}
       }
     }
   }
   depends_on = [
-    helm_release.minio,
-    helm_release.nginx-ingress
+    helm_release.ingress-nginx
   ]
 }
 
