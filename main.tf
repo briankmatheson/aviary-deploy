@@ -48,25 +48,6 @@ resource "helm_release" "nfs" {
   chart      = "csi-driver-nfs"
   namespace  = "kube-system"
 }
-resource "kubernetes_storage_class" "nfs" {
-  metadata {
-    name = "fast-nfs"
-    annotations = {
-      "storageclass.kubernetes.io/is-default-class" = "true"
-    }
-  }
-  storage_provisioner = "nfs.csi.k8s.io"
-  reclaim_policy      = "Delete"
-  volume_binding_mode = "WaitForFirstConsumer"
-  parameters = {
-    server = "10.23.98.1"
-    share = "/export/fast-nfs"
-  }
-  mount_options = ["nfsvers=4.2"]
-  depends_on = [
-    helm_release.nfs
-  ]
-}
 resource "kubernetes_storage_class" "standard" {
   metadata {
     name = "standard"
@@ -137,62 +118,62 @@ resource "kubernetes_ingress_v1" "gitea" {
 }
 
 
-# resource "helm_release" "minio" {
-#   name       = "minio"
-#   repository = "https://operator.min.io"
-#   chart      = "minio-operator"
-#   namespace  = "minio"
-#   create_namespace = true
+resource "helm_release" "minio" {
+  name       = "minio"
+  repository = "https://operator.min.io"
+  chart      = "operator"
+  namespace  = "minio"
+  create_namespace = true
 
-#   depends_on = [
-#     helm_release.nfs
-#   ]
-# }
-# resource "kubernetes_ingress_v1" "minio" {
-#   wait_for_load_balancer = true
-#   metadata {
-#     name = "minio"
-#     namespace = "minio"
-#   }
-#   spec {
-#     ingress_class_name = "nginx"
-#     rule {
-#       host = "minio.local"
-#       http {
-#         path {
-#           path = "/"
-#           backend {
-#             service {
-# 	      name = "minio1-hl"
-#               port {
-# 		number = 9000
-# 	      }
-# 	    }
-#           }
-#         }
-#       }
-#     }
-#     rule {
-#       host = "minio-console.local"
-#       http {
-# 	path {
-#           path = "/"
-#           backend {
-#             service {
-# 	      name = "minio1-console"
-#               port {
-# 		number = 9443
-# 	      }
-# 	    }
-#           }
-# 	}
-#       }
-#     }
-#   }
-#   depends_on = [
-#     helm_release.ingress-nginx
-#   ]
-# }
+  depends_on = [
+    helm_release.nfs
+  ]
+}
+resource "kubernetes_ingress_v1" "minio" {
+  wait_for_load_balancer = true
+  metadata {
+    name = "minio"
+    namespace = "minio"
+  }
+  spec {
+    ingress_class_name = "nginx"
+    rule {
+      host = "minio.local"
+      http {
+        path {
+          path = "/"
+          backend {
+            service {
+	      name = "minio1-hl"
+              port {
+		number = 9000
+	      }
+	    }
+          }
+        }
+      }
+    }
+    rule {
+      host = "minio-console.local"
+      http {
+	path {
+          path = "/"
+          backend {
+            service {
+	      name = "minio1-console"
+              port {
+		number = 9443
+	      }
+	    }
+          }
+	}
+      }
+    }
+  }
+  depends_on = [
+    helm_release.ingress-nginx
+  ]
+}
 
 
 # Resource "Helm_Release" "Velero" {
