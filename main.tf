@@ -144,34 +144,6 @@ resource "helm_release" "minio" {
   namespace  = "minio"
   create_namespace = true
 
-  set {
-    name  = "rootUser"
-    value = "admin"
-  }
-  set {
-    name  = "rootPassword"
-   value = "r"
-  }
-  set {
-    name  = "resources.requests.memory"
-    value = "512Mi"
-  }
-  set {
-    name  = "servers"
-    value = "1"
-  }
-  set {
-    name  = "storageClassName"
-    value = "fast-nfs"
-  }
-  set {
-    name  = "mode"
-    value = "standalone"
-  }
-  set {
-    name = "ingress"
-    value = true
-  }
   depends_on = [
     helm_release.nfs
   ]
