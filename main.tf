@@ -175,8 +175,60 @@ resource "kubernetes_ingress_v1" "minio" {
   ]
 }
 
+resource "helm_release" "postgres" {
+  name       = "postgres"
+  repository = "https://percona.github.io/percona-helm-charts/"
+  chart      = "pg-operator"
+  namespace  = "percona-postgres"
+  create_namespace = true
+  depends_on = [
+    helm_release.nfs
+  ]
+}
 
-# Resource "Helm_Release" "Velero" {
+resource "helm_release" "cloudtty" {
+  name       = "cloudtty"
+  repository = "https://cloudtty.github.io/cloudtty"
+  chart      = "cloudtty"
+  namespace  = "cloudtty"
+  create_namespace = true
+}
+resource "kubernetes_ingress_v1" "cloudtty" {
+  wait_for_load_balancer = true
+  metadata {
+    name = "cloudtty" 
+    namespace = "cloudtty"
+    annotations = {
+      "kubernetes.io/ingress.class" = "nginx"
+    }
+  }
+  spec {
+    ingress_class_name = "nginx"
+    rule {
+      host = "cloudtty.local"
+      http {
+        path {
+          path = "/"
+          backend {
+            service {
+	      name = "cloudtty-server"
+              port {
+		number = 80
+	      }
+	    }
+          }
+        }
+      }
+    }
+  }
+  depends_on = [
+    helm_release.ingress-nginx
+  ]
+}
+
+
+
+# resource "helm_release" "velero" {
 #   name       = "velero"
 #   repository = "https://vmware-tanzu.github.io/helm-charts"
 #   chart      = "velero"
