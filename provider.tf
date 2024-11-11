@@ -6,3 +6,6 @@ provider "helm" {
 provider "kubernetes" {
   config_path = var.kubeconfig
 }
+provider "kubectl" {
+  load_config_file       = true
+}
