@@ -51,6 +51,8 @@ resource "kubernetes_ingress_v1" "minio" {
     }
   }
   depends_on = [
-    helm_release.ingress-nginx
+    helm_release.nfs,
+    helm_release.ingress-nginx,
+    helm_release.minio
   ]
 }

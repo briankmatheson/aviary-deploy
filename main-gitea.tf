@@ -66,7 +66,9 @@ resource "kubernetes_ingress_v1" "gitea" {
     }
   }
   depends_on = [
-    helm_release.nfs
+    helm_release.nfs,
+    helm_release.ingress-nginx,
+    helm_release.gitea
   ]
 }
 
