@@ -6,7 +6,7 @@ resource "kubernetes_manifest" "metallb-ip" {
       "namespace" = "metallb-system"
     }
     "spec"        = {
-      "addresses" = [ "10.23.98.8/32" ]
+      "addresses" = [ "10.23.98.7/32", "10.23.98.8/32" ]
     }
   }
 }

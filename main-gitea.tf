@@ -5,10 +5,33 @@ resource "helm_release" "gitea" {
   namespace  = "gitea"
   create_namespace = true
 
-  
   set {
-    name  = "service.type"
-    value = "ClusterIP"
+    name = "global.storageClass"
+    value = "standard"
+  }
+  set {
+    name = "global.hostAliases[0].ip"
+    value = "10.23.98.8"
+  }
+  set {
+    name = "global.hostAliases[0].hostnames[0]"
+    value = "gitea.local"
+  }
+  set {
+    name = "service.ssh.externalHost"
+    value = "gitea.local"
+  }
+  set {
+    name  = "service.ssh.type"
+    value = "LoadBalancer"
+  }
+  set {
+    name = "service.ssh.loadBalancerIP"
+    value = "10.23.98.7"
+  }
+  set {
+    name = "ingress.hosts[0].host"
+    value = "ssh.gitea.local"
   }
   depends_on = [
     helm_release.nfs
