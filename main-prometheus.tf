@@ -10,10 +10,6 @@ resource "helm_release" "prometheus" {
     value = "admin"
   }
 
-  values = [
-    file("${path.module}/grafana.yaml"),
-    yamlencode(var.settings_grafana)
-  ]
   depends_on = [
     helm_release.nfs,
     helm_release.ingress-nginx,

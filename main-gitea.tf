@@ -33,6 +33,22 @@ resource "helm_release" "gitea" {
     name = "ingress.hosts[0].host"
     value = "ssh.gitea.local"
   }
+  set {
+    name = "redis-cluster.enabled"
+    value = false
+  }
+  set {
+    name = "redis.enabled"
+    value = true
+  }
+  set {
+    name = "postgresql-ha.enabled"
+    value = false
+  }
+  set {
+    name = "postgresql.enabled"
+    value = true
+  }
   depends_on = [
     helm_release.nfs
   ]
@@ -69,6 +85,7 @@ resource "kubernetes_ingress_v1" "gitea" {
     helm_release.nfs,
     helm_release.ingress-nginx,
     helm_release.gitea
+
   ]
 }
 

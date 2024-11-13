@@ -10,12 +10,43 @@ resource "helm_release" "grafana" {
     value = "admin"
   }
 
-  values = [
-    file("${path.module}/grafana.yaml"),
-    yamlencode(var.settings_grafana)
-  ]
   depends_on = [
     helm_release.nfs,
     helm_release.ingress-nginx,
+    helm_release.prometheus,
+  ]
+}
+resource "kubernetes_ingress_v1" "grafana" {
+  wait_for_load_balancer = true
+  metadata {
+    name = "grafana"
+    namespace = "grafana"
+    annotations = {
+      "kubernetes.io/ingress.class" = "nginx"
+    }
+  }
+  spec {
+    ingress_class_name = "nginx"
+    rule {
+      host = "grafana.local"
+      http {
+        path {
+          path = "/"
+          backend {
+            service {
+	      name = "grafana"
+              port {
+		number = 80
+	      }
+	    }
+          }
+        }
+      }
+    }
+  }
+  depends_on = [
+    helm_release.nfs,
+    helm_release.ingress-nginx,
+    helm_release.grafana
   ]
 }
