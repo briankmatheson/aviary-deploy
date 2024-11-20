@@ -6,12 +6,16 @@ resource "helm_release" "gitea" {
   create_namespace = true
 
   set {
+    name = "gitea.admin.password"
+    value = "r"
+  }
+  set {
     name = "global.storageClass"
     value = "standard"
   }
   set {
     name = "global.hostAliases[0].ip"
-    value = "10.23.98.8"
+    value = "10.23.99.8"
   }
   set {
     name = "global.hostAliases[0].hostnames[0]"
@@ -27,7 +31,7 @@ resource "helm_release" "gitea" {
   }
   set {
     name = "service.ssh.loadBalancerIP"
-    value = "10.23.98.7"
+    value = "10.23.99.7"
   }
   set {
     name = "ingress.hosts[0].host"
@@ -65,7 +69,7 @@ resource "kubernetes_ingress_v1" "gitea" {
   spec {
     ingress_class_name = "nginx"
     rule {
-      host = "gitea.local"
+      host = "gitea"
       http {
         path {
           path = "/"

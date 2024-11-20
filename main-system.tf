@@ -18,7 +18,7 @@ resource "kubernetes_manifest" "ing-ip" {
       "namespace" = "metallb-system"
     }
     "spec"        = {
-      "addresses" = [ "10.23.98.8/32" ]
+      "addresses" = [ "10.23.99.8/32" ]
     }
   }
 }
@@ -30,7 +30,7 @@ resource "kubernetes_manifest" "ssh-ip" {
       "namespace" = "metallb-system"
     }
     "spec"        = {
-      "addresses" = [ "10.23.98.7/32" ]
+      "addresses" = [ "10.23.99.7/32" ]
     }
   }
 }
@@ -70,7 +70,7 @@ resource "kubernetes_storage_class" "standard" {
   reclaim_policy      = "Delete"
   volume_binding_mode = "WaitForFirstConsumer"
   parameters = {
-    server = "10.23.98.1"
+    server = "10.23.99.1"
     share = "/export/fast-nfs"
   }
   mount_options = ["nfsvers=4.2"]

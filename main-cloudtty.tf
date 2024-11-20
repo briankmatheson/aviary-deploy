@@ -8,7 +8,7 @@ resource "helm_release" "cloudtty" {
 resource "kubernetes_ingress_v1" "cloudtty" {
   wait_for_load_balancer = true
   metadata {
-    name = "cloudtty" 
+    name = "aviary-cloudtty" 
     namespace = "cloudtty"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"

@@ -1,6 +1,6 @@
 provider "helm" {
   kubernetes {
-    config_path = "/home/bmath/k8s/u98/kubeconfig.yaml"
+    config_path = "/home/bmath/k8s/u99/kubeconfig.yaml"
   }
 }
 provider "kubernetes" {
