@@ -10,16 +10,16 @@ resource "helm_release" "harbor" {
     value = "ingress"
   }
   set {
-    name = "expose.ingress.annotations"
-    value = "kubernetes.io/ingress.class: nginx"
-  }
-  set {
     name = "expose.ingress.hosts.core"
     value = "harbor"
   }
   set {
     name = "externalURL"
     value = "https://harbor"
+  }
+  set {
+    name = "ipFamily.ipv6.enabled"
+    value = false
   }
   depends_on = [
     helm_release.nfs,

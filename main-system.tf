@@ -18,7 +18,12 @@ resource "kubernetes_manifest" "ing-ip" {
       "namespace" = "metallb-system"
     }
     "spec"        = {
-      "addresses" = [ "10.23.99.8/32" ]
+      "addresses" = [
+	"10.23.99.4/32",
+	"10.23.99.5/32",
+	"10.23.99.6/32",
+	"10.23.99.7/32"
+      ]
     }
   }
 }
@@ -30,7 +35,7 @@ resource "kubernetes_manifest" "ssh-ip" {
       "namespace" = "metallb-system"
     }
     "spec"        = {
-      "addresses" = [ "10.23.99.7/32" ]
+      "addresses" = [ "10.23.99.8/32" ]
     }
   }
 }

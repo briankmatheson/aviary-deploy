@@ -92,5 +92,24 @@ resource "kubernetes_ingress_v1" "gitea" {
 
   ]
 }
-
-
+resource "kubectl_manifest" "drone" {
+  yaml_body = <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: drone
+  name: drone
+  namespace: gitea
+spec:
+  externalName: ingress-nginx-controller.ingress-nginx.svc.cluster.local
+  selector:
+    app: drone
+  sessionAffinity: None
+  type: ExternalName
+EOF
+  depends_on = [
+    helm_release.gitea,
+    kubernetes_ingress_v1.cloudtty
+  ]
+}

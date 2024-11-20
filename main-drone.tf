@@ -70,7 +70,7 @@ spec:
   type: ExternalName
 EOF
   depends_on = [
-    helm_release.cloudtty,
+    helm_release.drone,
     kubernetes_ingress_v1.cloudtty
   ]
 }

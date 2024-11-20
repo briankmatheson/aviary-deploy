@@ -8,7 +8,7 @@ resource "helm_release" "cloudtty" {
 resource "kubernetes_ingress_v1" "cloudtty" {
   wait_for_load_balancer = true
   metadata {
-    name = "aviary-cloudtty" 
+    name = "cloudtty" 
     namespace = "cloudtty"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"
@@ -17,7 +17,7 @@ resource "kubernetes_ingress_v1" "cloudtty" {
   spec {
     ingress_class_name = "nginx"
     rule {
-      host = "cloudtty.local"
+      host = "bash.local"
       http {
         path {
           path = "/"
@@ -42,7 +42,7 @@ resource "kubectl_manifest" "cloudtty" {
 apiVersion: cloudshell.cloudtty.io/v1alpha1
 kind: CloudShell
 metadata:
-  name: bash
+  name: aviary-bash
   namespace: cloudtty
 spec:
   commandAction: "bash"
