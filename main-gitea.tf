@@ -7,7 +7,7 @@ resource "helm_release" "gitea" {
 
   set {
     name = "gitea.admin.password"
-    value = "r"
+    value = "rrrrrrrr"
   }
   set {
     name = "global.storageClass"
@@ -35,6 +35,14 @@ resource "helm_release" "gitea" {
   }
   set {
     name = "ingress.hosts[0].host"
+    value = "gitea"
+  }
+  set {
+    name = "ingress.hosts[1].host"
+    value = "gitea.local"
+  }
+  set {
+    name = "ingress.hosts[2].host"
     value = "ssh.gitea.local"
   }
   set {

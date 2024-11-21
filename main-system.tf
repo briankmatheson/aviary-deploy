@@ -27,18 +27,6 @@ resource "kubernetes_manifest" "ing-ip" {
     }
   }
 }
-resource "kubernetes_manifest" "ssh-ip" {
-  manifest = {    "apiVersion" = "metallb.io/v1beta1"
-    "kind"       = "IPAddressPool"
-    "metadata"   = {
-      "name"      = "ssh-ip"
-      "namespace" = "metallb-system"
-    }
-    "spec"        = {
-      "addresses" = [ "10.23.99.8/32" ]
-    }
-  }
-}
 
 
 resource "helm_release" "ingress-nginx" {

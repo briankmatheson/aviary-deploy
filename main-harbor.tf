@@ -14,6 +14,10 @@ resource "helm_release" "harbor" {
     value = "harbor"
   }
   set {
+    name = "expose.ingress.className"
+    value = "nginx"
+  }
+  set {
     name = "externalURL"
     value = "https://harbor"
   }

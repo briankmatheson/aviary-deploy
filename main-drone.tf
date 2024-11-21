@@ -26,6 +26,10 @@ resource "helm_release" "drone" {
     value = "Prefix"
   }
   set {
+    name = "env.DRONE_NAMESPACE_DEFAULT"
+    value = "drone-runner"
+  }
+  set {
     name = "env.DRONE_SERVER_HOST"
     value = "drone.local"
   }
