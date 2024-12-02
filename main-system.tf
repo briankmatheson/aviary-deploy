@@ -43,6 +43,10 @@ resource "helm_release" "ingress-nginx" {
     name = "service.externalIPs"
     value = "ing-ip"
   }
+  depends_on = [
+    helm_release.cert-manager,
+    kubectl_manifest.ca-issuer
+  ]
 }
 
 

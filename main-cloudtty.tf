@@ -23,7 +23,7 @@ resource "kubernetes_ingress_v1" "cloudtty" {
           path = "/"
           backend {
             service {
-	      name = "cloudshell-bash"
+	      name = "cloudshell-aviary-bash"
               port {
 		number = 7681
 	      }
@@ -46,7 +46,6 @@ metadata:
   namespace: cloudtty
 spec:
   commandAction: "bash"
-  ttl: 500
   once: false
 EOF
   depends_on = [

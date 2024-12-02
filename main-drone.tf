@@ -35,7 +35,7 @@ resource "helm_release" "drone" {
   }
   set {
     name = "env.DRONE_SERVER_PROTO"
-    value = "http"
+    value = "https"
   }
   set {
     name = "env.DRONE_RPC_SECRET"
@@ -47,11 +47,11 @@ resource "helm_release" "drone" {
   }
   set {
     name = "env.DRONE_GITEA_CLIENT_ID"
-    value = "73fe06c6-c07a-47c6-a0ab-3a4f8bfa0c2d"
+    value = "5e58c6f5-e192-4aec-951a-85efddc5bcd2"
   }
   set {
     name = "env.DRONE_GITEA_CLIENT_SECRET"
-    value = "gto_fki2q4pbj7uxnyx5d2g55jm3aqebtijxhwedibvbftk6q2ei7tba"
+    value = "gto_t6tk4atcqemhiqhj7a7lsqkh65qehtiduixbwremkhxbnkkvluaq"
   }
   depends_on = [
     helm_release.nfs
