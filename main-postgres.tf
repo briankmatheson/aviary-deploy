@@ -10,7 +10,7 @@ resource "helm_release" "postgres" {
 }
 resource "kubectl_manifest" "db" {
   yaml_body = <<EOF
-apiVersion: postgres.percona.com/v1
+apiVersion: apiextensions.k8s.io/v1
 kind: perconapgcluster
 metadata:
   name: db
