@@ -1,3 +1,4 @@
+/* Percona Postgres
 resource "helm_release" "postgres" {
   name       = "postgres"
   repository = "https://percona.github.io/percona-helm-charts/"
@@ -8,28 +9,68 @@ resource "helm_release" "postgres" {
     helm_release.nfs
   ]
 }
-resource "kubectl_manifest" "db" {
-  yaml_body = <<EOF
-apiVersion: apiextensions.k8s.io/v1
-kind: perconapgcluster
-metadata:
-  name: db
-  namespace: percona-postgres
-spec:
-  postgresqlVersion: "15"
-  instances:
-  - name: primary
-    storage:
-      accessModes: 
-        - ReadWriteOnce
-      size: 10Gi
-  - name: standby
-    storage:
-      accessModes: 
-        - ReadWriteOnce
-      size: 10Gi
-EOF
+resource "helm_release" "pgdb" {
+  name       = "postgres"
+  repository = "https://percona.github.io/percona-helm-charts/"
+  chart      = "pg-db"
+  namespace  = "percona-postgres"
   depends_on = [
+    helm_release.postgres
+  ]
+}
+*/
+
+// Zalando Postgres
+resource "helm_release" "postgres" {
+  name       = "postgres"
+  repository = "https://opensource.zalando.com/postgres-operator/charts/postgres-operator"
+  chart      = "postgres-operator"
+  namespace  = "zalando-postgres"
+  create_namespace = true
+  depends_on = [
+    helm_release.nfs
+  ]
+}
+resource "helm_release" "postgres-ui" {
+  name       = "postgres-ui"
+  repository = "https://opensource.zalando.com/postgres-operator/charts/postgres-operator-ui"
+  chart      = "postgres-operator-ui"
+  namespace  = "zalando-postgres"
+  depends_on = [
+    helm_release.postgres
+  ]
+}
+resource "kubernetes_ingress_v1" "postgres-ui" {
+  wait_for_load_balancer = true
+  metadata {
+    name = "postgres-ui"
+    namespace = "zalando-postgres"
+    annotations = {
+      "kubernetes.io/ingress.class" = "nginx"
+    }
+  }
+  spec {
+    ingress_class_name = "nginx"
+    rule {
+      host = "postgres-ui.local"
+      http {
+        path {
+          path = "/"
+          backend {
+            service {
+	      name = "postgres-ui-postgres-operator-ui"
+              port {
+		number = 80
+	      }
+	    }
+          }
+        }
+      }
+    }
+  }
+  depends_on = [
+    helm_release.nfs,
+    helm_release.ingress-nginx,
     helm_release.postgres
   ]
 }

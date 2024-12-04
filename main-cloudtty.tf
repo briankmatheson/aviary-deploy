@@ -5,11 +5,26 @@ resource "helm_release" "cloudtty" {
   namespace  = "cloudtty"
   create_namespace = true
 }
+resource "kubectl_manifest" "cloudtty" {
+  yaml_body = <<EOF
+apiVersion: cloudshell.cloudtty.io/v1alpha1
+kind: CloudShell
+metadata:
+  name: aviary-bash
+  namespace: default
+spec:
+  commandAction: "bash"
+  once: false
+EOF
+  depends_on = [
+    helm_release.cloudtty,
+  ]
+}
 resource "kubernetes_ingress_v1" "cloudtty" {
   wait_for_load_balancer = true
   metadata {
     name = "cloudtty" 
-    namespace = "cloudtty"
+    namespace = "default"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"
     }
@@ -34,22 +49,6 @@ resource "kubernetes_ingress_v1" "cloudtty" {
     }
   }
   depends_on = [
-    helm_release.ingress-nginx
-  ]
-}
-resource "kubectl_manifest" "cloudtty" {
-  yaml_body = <<EOF
-apiVersion: cloudshell.cloudtty.io/v1alpha1
-kind: CloudShell
-metadata:
-  name: aviary-bash
-  namespace: cloudtty
-spec:
-  commandAction: "bash"
-  once: false
-EOF
-  depends_on = [
-    helm_release.cloudtty,
-    kubernetes_ingress_v1.cloudtty
+    kubectl_manifest.cloudtty
   ]
 }

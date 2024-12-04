@@ -75,3 +75,10 @@ resource "kubernetes_storage_class" "standard" {
     helm_release.nfs
   ]
 }
+
+resource "helm_release" "dashboard" {
+  name = "kubernetes-dashboard"
+  repository = "https://kubernetes.github.io/dashboard/"
+  chart = "kubernetes-dashboard"
+  namespace = "kube-system"
+}

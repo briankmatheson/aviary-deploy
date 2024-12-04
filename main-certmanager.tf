@@ -14,17 +14,18 @@ resource "helm_release" "cert-manager" {
   ]
 }
 resource "kubectl_manifest" "ca" {
+  force_new = true
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: selfsigned
-  namespace: cert-manager
 spec:
   selfSigned: {}
 EOF
 }
 resource "kubectl_manifest" "ca-cert" {
+  force_new = true
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -48,6 +49,7 @@ EOF
   ]
 }
 resource "kubectl_manifest" "ca-issuer" {
+  force_new = true
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer

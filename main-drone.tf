@@ -43,15 +43,15 @@ resource "helm_release" "drone" {
   }
   set {
     name = "env.DRONE_GITEA_SERVER"
-    value = "http://gitea"
+    value = "https://gitea"
   }
   set {
     name = "env.DRONE_GITEA_CLIENT_ID"
-    value = "5e58c6f5-e192-4aec-951a-85efddc5bcd2"
+    value = "6e7195ca-f7ca-4847-ad84-ed2b1cb42c16"
   }
   set {
     name = "env.DRONE_GITEA_CLIENT_SECRET"
-    value = "gto_t6tk4atcqemhiqhj7a7lsqkh65qehtiduixbwremkhxbnkkvluaq"
+    value = "gto_4gelppl5xtwr7jvpin7lhojvmutkzezpajpy7peetdxtoipvptyq"
   }
   depends_on = [
     helm_release.nfs
