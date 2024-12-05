@@ -22,7 +22,8 @@ resource "kubernetes_ingress_v1" "grafana" {
     name = "grafana"
     namespace = "grafana"
     annotations = {
-      "kubernetes.io/ingress.class" = "nginx"
+      "kubernetes.io/ingress.class" = "nginx",
+      "cert-manager.io/cluster-issuer" =  "ca-issuer"
     }
   }
   spec {
@@ -42,6 +43,10 @@ resource "kubernetes_ingress_v1" "grafana" {
           }
         }
       }
+    }
+    tls {
+      secret_name = "grafana-tls"
+      hosts = [ "grafana" ]
     }
   }
   depends_on = [

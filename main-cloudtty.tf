@@ -13,6 +13,7 @@ metadata:
   name: aviary-bash
   namespace: default
 spec:
+  image: briankmatheson/cloudshell
   commandAction: "bash"
   once: false
 EOF
@@ -26,7 +27,8 @@ resource "kubernetes_ingress_v1" "cloudtty" {
     name = "cloudtty" 
     namespace = "default"
     annotations = {
-      "kubernetes.io/ingress.class" = "nginx"
+      "kubernetes.io/ingress.class" = "nginx",
+      "cert-manager.io/cluster-issuer" =  "ca-issuer"
     }
   }
   spec {
@@ -47,8 +49,13 @@ resource "kubernetes_ingress_v1" "cloudtty" {
         }
       }
     }
+    tls {
+      secret_name = "cloudtty-tls"
+      hosts = [ "bash.local" ]
+    }
   }
   depends_on = [
+    helm_release.ingress-nginx,
     kubectl_manifest.cloudtty
   ]
 }

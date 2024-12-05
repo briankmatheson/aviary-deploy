@@ -80,6 +80,10 @@ resource "kubernetes_ingress_v1" "velero" {
         }
       }
     }
+    tls {
+      secret_name = "velero-tls"
+      hosts = [ "velero.local" ]
+    }
   }
   depends_on = [
     helm_release.velero

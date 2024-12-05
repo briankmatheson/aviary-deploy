@@ -47,6 +47,7 @@ resource "kubernetes_ingress_v1" "postgres-ui" {
     namespace = "zalando-postgres"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"
+      "cert-manager.io/cluster-issuer" =  "ca-issuer"
     }
   }
   spec {
@@ -66,6 +67,10 @@ resource "kubernetes_ingress_v1" "postgres-ui" {
           }
         }
       }
+    }
+    tls {
+      secret_name = "postgres-ui-tls"
+      hosts = [ "postgres-ui.local" ]
     }
   }
   depends_on = [

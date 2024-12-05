@@ -43,6 +43,10 @@ resource "helm_release" "ingress-nginx" {
     name = "service.externalIPs"
     value = "ing-ip"
   }
+  set {
+    name = "controller.service.externalTrafficPolicy"
+    value = "Local"
+  }
   depends_on = [
     helm_release.cert-manager,
     kubectl_manifest.ca-issuer
@@ -81,4 +85,57 @@ resource "helm_release" "dashboard" {
   repository = "https://kubernetes.github.io/dashboard/"
   chart = "kubernetes-dashboard"
   namespace = "kube-system"
+  set {
+    name = "kong.env.proxy_listen"
+    value = "0.0.0.0:8443 http2 ssl"
+  }
+  set {
+    name = "kong.env.admin_listen"
+    value = "0.0.0.0:8443 http2 ssl"
+  }
+  set {
+    name = "kong.env.status_listen"
+    value = "0.0.0.0:8443 http2 ssl"
+  }
+  depends_on = [
+    helm_release.nfs
+  ]
+}
+resource "kubernetes_ingress_v1" "dashboard" {
+  wait_for_load_balancer = true
+  metadata {
+    name = "kubernetes-dashboard" 
+    namespace = "kube-system"
+    annotations = {
+      "kubernetes.io/ingress.class" = "nginx"
+      "cert-manager.io/cluster-issuer" = "ca-issuer"
+    }
+  }
+  spec {
+    ingress_class_name = "nginx"
+    rule {
+      host = "kubernetes-dashboard.local"
+      http {
+        path {
+          path = "/"
+          backend {
+            service {
+	      name = "kubernetes-dashboard-web"
+              port {
+		number = 80
+	      }
+	    }
+          }
+        }
+      }
+    }
+    tls {
+      secret_name = "kubernetes-dashboard-tls"
+      hosts = [ "kubernetes-dashboard.local" ]
+    }
+  }
+  depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx
+  ]
 }

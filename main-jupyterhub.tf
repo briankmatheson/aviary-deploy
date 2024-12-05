@@ -18,6 +18,7 @@ resource "kubernetes_ingress_v1" "jupyterhub" {
     namespace = "jupyterhub"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"
+      "cert-manager.io/cluster-issuer" =  "ca-issuer"
     }
   }
   spec {
@@ -37,6 +38,10 @@ resource "kubernetes_ingress_v1" "jupyterhub" {
           }
         }
       }
+    }
+    tls {
+      secret_name = "jupyternub-tls"
+      hosts = [ "jupyterhub.local" ]
     }
   }
   depends_on = [

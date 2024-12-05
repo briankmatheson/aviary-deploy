@@ -17,7 +17,8 @@ resource "kubernetes_ingress_v1" "mlflow" {
     name = "mlflow"
     namespace = "mlflow"
     annotations = {
-      "kubernetes.io/ingress.class" = "nginx"
+      "kubernetes.io/ingress.class" = "nginx",
+      "cert-manager.io/cluster-issuer" =  "ca-issuer"
     }
   }
   spec {
@@ -37,6 +38,10 @@ resource "kubernetes_ingress_v1" "mlflow" {
           }
         }
       }
+    }
+    tls {
+      secret_name = "mlflow-tls"
+      hosts = [ "mlflow.local" ]
     }
   }
   depends_on = [

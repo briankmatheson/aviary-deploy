@@ -71,9 +71,15 @@ resource "kubernetes_ingress_v1" "gitea" {
     name = "gitea"
     namespace = "gitea"
     annotations = {
-      "kubernetes.io/ingress.class" = "nginx"
+      "kubernetes.io/ingress.class" = "nginx",
+      "cert-manager.io/cluster-issuer" =  "ca-issuer"
     }
   }
+  depends_on = [
+    helm_release.nfs,
+    helm_release.ingress-nginx,
+    helm_release.gitea
+  ]
   spec {
     ingress_class_name = "nginx"
     rule {
@@ -92,13 +98,11 @@ resource "kubernetes_ingress_v1" "gitea" {
         }
       }
     }
+    tls {
+      secret_name = "gitea-tls"
+      hosts = [ "gitea" ]
+    }
   }
-  depends_on = [
-    helm_release.nfs,
-    helm_release.ingress-nginx,
-    helm_release.gitea
-
-  ]
 }
 resource "kubectl_manifest" "drone" {
   yaml_body = <<EOF
@@ -118,6 +122,6 @@ spec:
 EOF
   depends_on = [
     helm_release.gitea,
-    kubernetes_ingress_v1.cloudtty
+    helm_release.drone
   ]
 }

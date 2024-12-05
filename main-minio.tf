@@ -127,6 +127,10 @@ resource "kubernetes_ingress_v1" "minio" {
   metadata {
     name = "minio"
     namespace = "minio-operator"
+    annotations = {
+      "kubernetes.io/ingress.class" = "nginx",
+      "cert-manager.io/cluster-issuer" =  "ca-issuer"
+    }
   }
   spec {
     ingress_class_name = "nginx"
@@ -161,6 +165,10 @@ resource "kubernetes_ingress_v1" "minio" {
           }
 	}
       }
+    }
+    tls {
+      secret_name = "minio-tls"
+      hosts = [ "minio.local" ]
     }
   }
   depends_on = [

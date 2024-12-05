@@ -12,6 +12,7 @@ resource "kubernetes_ingress_v1" "rustpad" {
     namespace = "rustpad"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"
+      "cert-manager.io/cluster-issuer" =  "ca-issuer"
     }
   }
   spec {
@@ -32,5 +33,14 @@ resource "kubernetes_ingress_v1" "rustpad" {
         }
       }
     }
+    tls {
+      secret_name = "rustpad-tls"
+      hosts = ["rustpad.local"]
+    }
   }
+  depends_on = [
+    helm_release.ingress-nginx,
+    helm_release.rustpad,
+  ]
 }
+
