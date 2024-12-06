@@ -78,3 +78,17 @@ EOF
     kubernetes_ingress_v1.cloudtty
   ]
 }
+
+
+/*
+        - mountPath: /etc/ssl/certs
+          name: ca-certs
+          readOnly: true
+
+      - configMap:
+          defaultMode: 420 
+          name: ca-certs
+        name: ca-certs
+
+
+*/

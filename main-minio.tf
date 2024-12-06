@@ -1,5 +1,5 @@
 resource "helm_release" "minio" {
-  name       = "minio-operator"
+  name       = "minio"
   repository = "https://operator.min.io"
   chart      = "operator"
   namespace  = "minio"
@@ -126,7 +126,7 @@ resource "kubernetes_ingress_v1" "minio" {
   wait_for_load_balancer = true
   metadata {
     name = "minio"
-    namespace = "minio-operator"
+    namespace = "minio"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx",
       "cert-manager.io/cluster-issuer" =  "ca-issuer"
@@ -148,22 +148,6 @@ resource "kubernetes_ingress_v1" "minio" {
 	    }
           }
         }
-      }
-    }
-    rule {
-      host = "minio-console.local"
-      http {
-	path {
-          path = "/"
-          backend {
-            service {
-	      name = "minio0-console"
-              port {
-		number = 9443
-	      }
-	    }
-          }
-	}
       }
     }
     tls {
