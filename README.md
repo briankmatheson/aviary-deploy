@@ -28,3 +28,4 @@ Take care to preserve your PVCs when re-deploying.
 tofu destroy skips helm installs that are in progress.  Take a look at `helm ls -A` and also check for sa, secret, and cm resources in the associated namespaces before reapplying.
 
 Current runs against Ubuntu / kubeadm cluster running under kvm and metallb seem good.
+![image](https://github.com/user-attachments/assets/6312e706-4882-4925-b31b-5c8be9fcfc89)
