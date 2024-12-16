@@ -28,32 +28,6 @@ resource "kubernetes_manifest" "ing-ip" {
   }
 }
 
-
-resource "helm_release" "ingress-nginx" {
-  name       = "ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
-  namespace  = "ingress-nginx"
-  create_namespace = true
-  set {
-    name  = "service.type"
-    value = "LoadBalancer"
-  }
-  set {
-    name = "service.externalIPs"
-    value = "ing-ip"
-  }
-  set {
-    name = "controller.service.externalTrafficPolicy"
-    value = "Local"
-  }
-  depends_on = [
-    helm_release.cert-manager,
-    kubectl_manifest.ca-issuer
-  ]
-}
-
-
 resource "helm_release" "nfs" {
   name       = "csi-driver-nfs"
   repository = "https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts"
@@ -80,11 +54,103 @@ resource "kubernetes_storage_class" "standard" {
   ]
 }
 
+resource "helm_release" "cert-manager" {
+  name       = "cert-manager"
+  repository = "https://charts.jetstack.io"
+  chart      = "cert-manager"
+  namespace  = "cert-manager"
+  create_namespace = true
+
+  set {
+    name = "crds.enabled"
+    value = true
+  }
+}
+resource "kubectl_manifest" "ca" {
+  force_new = true
+  yaml_body = <<EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-ca
+spec:
+  selfSigned: {}
+EOF
+  depends_on = [
+    helm_release.cert-manager,
+  ]
+}
+resource "kubectl_manifest" "ca-cert" {
+  force_new = true
+  yaml_body = <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: ca
+  secretName: ca-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-ca
+    kind: ClusterIssuer
+    group: cert-manager.io  
+EOF
+  depends_on = [
+    kubectl_manifest.ca
+  ]
+}
+resource "kubectl_manifest" "ca-issuer" {
+  force_new = true
+  yaml_body = <<EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ca-issuer
+  namespace: cert-manager
+spec:
+  ca:
+    secretName: ca-secret
+EOF
+  depends_on = [
+    kubectl_manifest.ca-cert
+  ]
+}
+
+resource "helm_release" "ingress-nginx" {
+  name       = "ingress-nginx"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+  namespace  = "ingress-nginx"
+  create_namespace = true
+  set {
+    name  = "service.type"
+    value = "LoadBalancer"
+  }
+  set {
+    name = "service.externalIPs"
+    value = "ing-ip"
+  }
+  set {
+    name = "controller.service.externalTrafficPolicy"
+    value = "Local"
+  }
+  depends_on = [
+    kubectl_manifest.ca-issuer
+  ]
+}
+
+
 resource "helm_release" "dashboard" {
   name = "kubernetes-dashboard"
   repository = "https://kubernetes.github.io/dashboard/"
   chart = "kubernetes-dashboard"
   namespace = "kube-system"
+  create_namespace = true
   set {
     name = "kong.env.proxy_listen"
     value = "0.0.0.0:8443 http2 ssl"
@@ -97,8 +163,12 @@ resource "helm_release" "dashboard" {
     name = "kong.env.status_listen"
     value = "0.0.0.0:8443 http2 ssl"
   }
+  set {
+    name = "kong.enabled"
+    value = false
+  }
   depends_on = [
-    helm_release.nfs
+    helm_release.ingress-nginx
   ]
 }
 resource "kubernetes_ingress_v1" "dashboard" {

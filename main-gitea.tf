@@ -62,6 +62,8 @@ resource "helm_release" "gitea" {
     value = true
   }
   depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx,
     helm_release.nfs
   ]
 }

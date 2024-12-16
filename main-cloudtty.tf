@@ -4,6 +4,10 @@ resource "helm_release" "cloudtty" {
   chart      = "cloudtty"
   namespace  = "cloudtty"
   create_namespace = true
+  depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx
+  ]
 }
 resource "kubectl_manifest" "cloudtty" {
   yaml_body = <<EOF

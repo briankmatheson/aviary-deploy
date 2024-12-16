@@ -50,8 +50,6 @@ resource "kubernetes_ingress_v1" "grafana" {
     }
   }
   depends_on = [
-    helm_release.nfs,
-    helm_release.ingress-nginx,
     helm_release.grafana
   ]
 }

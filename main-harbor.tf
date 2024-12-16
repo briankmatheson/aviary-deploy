@@ -26,7 +26,8 @@ resource "helm_release" "harbor" {
     value = false
   }
   depends_on = [
-    helm_release.nfs,
-    helm_release.ingress-nginx
+    helm_release.dashboard,
+    helm_release.ingress-nginx,
+    helm_release.nfs
   ]
 }

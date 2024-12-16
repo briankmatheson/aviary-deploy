@@ -6,6 +6,8 @@ resource "helm_release" "postgres" {
   namespace  = "percona-postgres"
   create_namespace = true
   depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx,
     helm_release.nfs
   ]
 }
@@ -15,6 +17,8 @@ resource "helm_release" "pgdb" {
   chart      = "pg-db"
   namespace  = "percona-postgres"
   depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx,
     helm_release.postgres
   ]
 }
@@ -28,6 +32,8 @@ resource "helm_release" "postgres" {
   namespace  = "zalando-postgres"
   create_namespace = true
   depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx,
     helm_release.nfs
   ]
 }
@@ -74,8 +80,6 @@ resource "kubernetes_ingress_v1" "postgres-ui" {
     }
   }
   depends_on = [
-    helm_release.nfs,
-    helm_release.ingress-nginx,
-    helm_release.postgres
+    helm_release.postgres-ui
   ]
 }

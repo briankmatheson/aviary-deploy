@@ -11,6 +11,7 @@ resource "helm_release" "prometheus" {
   }
 
   depends_on = [
+    helm_release.dashboard,
     helm_release.nfs,
     helm_release.ingress-nginx,
   ]

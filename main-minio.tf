@@ -6,6 +6,8 @@ resource "helm_release" "minio" {
   create_namespace = true
 
   depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx,
     helm_release.nfs
   ]
 }
@@ -24,6 +26,9 @@ stringData:
     export MINIO_BROWSER="on"
 type: Opaque
 EOF
+  depends_on = [
+    helm_release.minio,
+  ]
 }
 resource "kubectl_manifest" "minio-keys" {
   yaml_body = <<EOF
@@ -37,6 +42,9 @@ metadata:
   namespace: minio
 type: Opaque
 EOF
+  depends_on = [
+    helm_release.minio,
+  ]
 }
 resource "kubectl_manifest" "minio" {
   yaml_body = <<EOF
@@ -130,6 +138,8 @@ resource "kubernetes_ingress_v1" "minio" {
     annotations = {
       "kubernetes.io/ingress.class" = "nginx",
       "cert-manager.io/cluster-issuer" =  "ca-issuer"
+      //  nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      // nginx.ingress.kubernetes.io/proxy-body-size: 2048g
     }
   }
   spec {
@@ -156,8 +166,6 @@ resource "kubernetes_ingress_v1" "minio" {
     }
   }
   depends_on = [
-    helm_release.nfs,
-    helm_release.ingress-nginx,
-    helm_release.minio
+    helm_release.minio,
   ]
 }

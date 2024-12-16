@@ -4,6 +4,10 @@ resource "helm_release" "rustpad" {
   chart      = "rustpad"
   namespace  = "rustpad"
   create_namespace = true
+  depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx
+  ]
 }
 resource "kubernetes_ingress_v1" "rustpad" {
   wait_for_load_balancer = true
@@ -39,7 +43,6 @@ resource "kubernetes_ingress_v1" "rustpad" {
     }
   }
   depends_on = [
-    helm_release.ingress-nginx,
     helm_release.rustpad,
   ]
 }

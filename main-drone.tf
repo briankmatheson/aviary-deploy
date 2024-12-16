@@ -54,6 +54,8 @@ resource "helm_release" "drone" {
     value = "gto_4gelppl5xtwr7jvpin7lhojvmutkzezpajpy7peetdxtoipvptyq"
   }
   depends_on = [
+    helm_release.dashboard,
+    helm_release.ingress-nginx,
     helm_release.nfs
   ]
 }
