@@ -6,7 +6,7 @@ resource "kubernetes_manifest" "l2-advertisements" {
       "namespace" = "metallb-system"
     }
     "spec"       = {
-      "ipAddressPools" = [ "ssh-ip", "ing-ip" ]
+      "ipAddressPools" = [ "ing-ip" ]
     }
   }
 }
