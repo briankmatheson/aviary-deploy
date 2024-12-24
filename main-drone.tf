@@ -56,7 +56,7 @@ resource "helm_release" "drone" {
   depends_on = [
     helm_release.dashboard,
     helm_release.ingress-nginx,
-    helm_release.nfs
+    kubernetes_storage_class.standard
   ]
 }
 resource "kubectl_manifest" "gitea" {

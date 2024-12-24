@@ -64,7 +64,7 @@ resource "helm_release" "gitea" {
   depends_on = [
     helm_release.dashboard,
     helm_release.ingress-nginx,
-    helm_release.nfs
+    kubernetes_storage_class.standard
   ]
 }
 resource "kubernetes_ingress_v1" "gitea" {
@@ -78,7 +78,7 @@ resource "kubernetes_ingress_v1" "gitea" {
     }
   }
   depends_on = [
-    helm_release.nfs,
+    kubernetes_storage_class.standard,
     helm_release.ingress-nginx,
     helm_release.gitea
   ]

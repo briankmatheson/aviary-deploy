@@ -50,11 +50,12 @@
 #   }
 #   mount_options = ["nfsvers=4.2"]
 #   depends_on = [
-#     helm_release.nfs
+#     kubernetes_storage_class.standard
 #   ]
 # }
 
 resource "kubernetes_storage_class" "standard" {
+  storage_provisioner = "rancher.io/local-path"
   metadata {
     name = "standard"
     annotations = {

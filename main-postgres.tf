@@ -8,7 +8,7 @@ resource "helm_release" "postgres" {
   depends_on = [
     helm_release.dashboard,
     helm_release.ingress-nginx,
-    helm_release.nfs
+    kubernetes_storage_class.standard
   ]
 }
 resource "helm_release" "pgdb" {
@@ -34,7 +34,7 @@ resource "helm_release" "postgres" {
   depends_on = [
     helm_release.dashboard,
     helm_release.ingress-nginx,
-    helm_release.nfs
+    kubernetes_storage_class.standard
   ]
 }
 resource "helm_release" "postgres-ui" {
