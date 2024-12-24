@@ -17,7 +17,7 @@ metadata:
   name: aviary-bash
   namespace: default
 spec:
-  image: briankmatheson/cloudshell
+  image: harbor:443/tmp/workstation
   commandAction: "bash"
   once: false
 EOF

@@ -179,6 +179,7 @@ resource "kubernetes_ingress_v1" "dashboard" {
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"
       "cert-manager.io/cluster-issuer" = "ca-issuer"
+      "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
     }
   }
   spec {
@@ -190,9 +191,9 @@ resource "kubernetes_ingress_v1" "dashboard" {
           path = "/"
           backend {
             service {
-	      name = "kubernetes-dashboard-web"
+	      name = "kubernetes-dashboard-kong-proxy"
               port {
-		number = 80
+		number = 443
 	      }
 	    }
           }

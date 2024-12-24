@@ -138,8 +138,9 @@ resource "kubernetes_ingress_v1" "minio" {
     annotations = {
       "kubernetes.io/ingress.class" = "nginx",
       "cert-manager.io/cluster-issuer" =  "ca-issuer"
-      //  nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-      // nginx.ingress.kubernetes.io/proxy-body-size: 2048g
+      "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
+      "nginx.ingress.kubernetes.io/client-max-body-size" = "1024g"
+      "nginx.ingress.kubernetes.io/proxy-body-size" = "1024g"
     }
   }
   spec {
@@ -151,9 +152,9 @@ resource "kubernetes_ingress_v1" "minio" {
           path = "/"
           backend {
             service {
-	      name = "minio"
+	      name = "minio0-console"
               port {
-		number = 443
+		number = 9443
 	      }
 	    }
           }

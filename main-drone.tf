@@ -76,21 +76,108 @@ spec:
   type: ExternalName
 EOF
   depends_on = [
-    helm_release.drone,
-    kubernetes_ingress_v1.cloudtty
+    helm_release.drone
   ]
 }
-
-
-/*
-        - mountPath: /etc/ssl/certs
-          name: ca-certs
-          readOnly: true
-
-      - configMap:
-          defaultMode: 420 
-          name: ca-certs
-        name: ca-certs
-
-
-*/
+resource "kubectl_manifest" "drone-role" {
+    yaml_body = <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+  name: drone
+  namespace: default
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/log
+  verbs:
+  - get
+  - create
+  - delete
+  - list
+  - watch
+  - update
+EOF
+  depends_on = [
+    helm_release.drone
+  ]
+}
+resource "kubectl_manifest" "drone-rolebindings" {
+  yaml_body = <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: drone
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: drone
+subjects:
+- kind: ServiceAccount
+  name: drone
+  namespace: drone
+EOF
+  depends_on = [
+    helm_release.drone
+  ]
+}
+resource "kubectl_manifest" "drone-runner" {
+  yaml_body = <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone-runner
+  namespace: default
+  labels:
+    app.kubernetes.io/name: drone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: drone
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: drone
+    spec:
+      serviceAccount: drone
+      serviceAccountName: drone
+      containers:
+      - name: runner
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /var/run
+          name: run
+        image: drone/drone-runner-kube:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DRONE_RPC_HOST
+          value: drone.drone:8080
+        - name: DRONE_RPC_PROTO
+          value: http
+        - name: DRONE_RPC_SECRET
+          value: "0xdeadbeef"
+      volumes:
+      - name: run
+        hostPath:
+          path: /var/run
+          type: Directory
+EOF
+  depends_on = [
+    kubectl_manifest.drone-rolebindings,
+    kubectl_manifest.drone-role
+  ]
+}

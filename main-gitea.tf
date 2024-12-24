@@ -123,7 +123,7 @@ spec:
   type: ExternalName
 EOF
   depends_on = [
-    helm_release.gitea,
-    helm_release.drone
+    kubernetes_ingress_v1.gitea,
+    kubectl_manifest.drone-runner
   ]
 }
