@@ -55,7 +55,7 @@ resource "helm_release" "velero" {
   }
   depends_on = [
     helm_release.dashboard,
-    helm_release.nfs,
+    kubernetes_storage_class.standard,
     helm_release.ingress-nginx,
   ]
 }
