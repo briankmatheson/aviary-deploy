@@ -13,7 +13,6 @@ resource "helm_release" "mlflow" {
   ]
 }
 resource "kubernetes_ingress_v1" "mlflow" {
-  wait_for_load_balancer = true
   metadata {
     name = "mlflow"
     namespace = "mlflow"

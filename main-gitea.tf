@@ -1,3 +1,12 @@
+
+# gitea is a github-like git server that can be self-hosted.  There
+# are a wide variety of install options which can be gleaned from the
+# chart's values file.  We set a subset here to support
+# * persistence via our standard nfs storage class
+# * ssh support via a separate lb IP
+# * tls for http interfaces
+#
+# NOTE: Most of the redundancy functionality is turned off.
 resource "helm_release" "gitea" {
   name       = "gitea"
   repository = "https://dl.gitea.com/charts/"
@@ -15,7 +24,7 @@ resource "helm_release" "gitea" {
   }
   set {
     name = "global.hostAliases[0].ip"
-    value = "10.23.99.8"
+    value = "192.168.122.6"
   }
   set {
     name = "global.hostAliases[0].hostnames[0]"
@@ -31,7 +40,7 @@ resource "helm_release" "gitea" {
   }
   set {
     name = "service.ssh.loadBalancerIP"
-    value = "10.23.99.7"
+    value = "192.168.122.9"
   }
   set {
     name = "ingress.hosts[0].host"
@@ -68,7 +77,6 @@ resource "helm_release" "gitea" {
   ]
 }
 resource "kubernetes_ingress_v1" "gitea" {
-  wait_for_load_balancer = true
   metadata {
     name = "gitea"
     namespace = "gitea"
@@ -124,6 +132,6 @@ spec:
 EOF
   depends_on = [
     kubernetes_ingress_v1.gitea,
-    kubectl_manifest.drone-runner
+    kubectl_manifest.drone-rolebindings
   ]
 }

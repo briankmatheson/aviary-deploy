@@ -138,7 +138,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: drone-runner
-  namespace: default
+  namespace: drone
   labels:
     app.kubernetes.io/name: drone
 spec:

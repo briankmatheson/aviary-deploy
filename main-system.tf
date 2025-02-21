@@ -1,68 +1,69 @@
-# resource "kubernetes_manifest" "l2-advertisements" {
-#   manifest = {    "apiVersion" = "metallb.io/v1beta1"
-#     "kind"       = "L2Advertisement"
-#     "metadata"   = {
-#       "name"      = "l2"
-#       "namespace" = "metallb-system"
-#     }
-#     "spec"       = {
-#       "ipAddressPools" = [ "ing-ip" ]
-#     }
-#   }
-# }
-# resource "kubernetes_manifest" "ing-ip" {
-#   manifest = {    "apiVersion" = "metallb.io/v1beta1"
-#     "kind"       = "IPAddressPool"
-#     "metadata"   = {
-#       "name"      = "ing-ip"
-#       "namespace" = "metallb-system"
-#     }
-#     "spec"        = {
-#       "addresses" = [
-# 	"10.23.99.4/32",
-# 	"10.23.99.5/32",
-# 	"10.23.99.6/32",
-# 	"10.23.99.7/32"
-#       ]
-#     }
-#   }
-# }
+resource "kubernetes_manifest" "l2-advertisements" {
+  manifest = {    "apiVersion" = "metallb.io/v1beta1"
+    "kind"       = "L2Advertisement"
+    "metadata"   = {
+      "name"      = "l2"
+      "namespace" = "metallb-system"
+    }
+    "spec"       = {
+      "ipAddressPools" = [ "ing-ip" ]
+    }
+  }
+}
+resource "kubernetes_manifest" "ing-ip" {
+  manifest = {    "apiVersion" = "metallb.io/v1beta1"
+    "kind"       = "IPAddressPool"
+    "metadata"   = {
+      "name"      = "ing-ip"
+      "namespace" = "metallb-system"
+    }
+    "spec"        = {
+      "addresses" = [
+	"192.168.122.6/32",
+	"192.168.122.7/32",
+	"192.168.122.8/32",
+	"192.168.122.9/32"
+      ]
+    }
+  }
+}
 
-# resource "helm_release" "nfs" {
-#   name       = "csi-driver-nfs"
-#   repository = "https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts"
-#   chart      = "csi-driver-nfs"
-#   namespace  = "kube-system"
-# }
-# resource "kubernetes_storage_class" "standard" {
-#   metadata {
-#     name = "standard"
-#     annotations = {
-#       "storageclass.kubernetes.io/is-default-class" = "true"
-#     }
-#   }
-#   storage_provisioner = "nfs.csi.k8s.io"
-#   reclaim_policy      = "Delete"
-#   volume_binding_mode = "WaitForFirstConsumer"
-#   parameters = {
-#     server = "10.23.99.1"
-#     share = "/export/fast-nfs"
-#   }
-#   mount_options = ["nfsvers=4.2"]
-#   depends_on = [
-#     kubernetes_storage_class.standard
-#   ]
-# }
-
+resource "helm_release" "nfs" {
+  name       = "csi-driver-nfs"
+  repository = "https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts"
+  chart      = "csi-driver-nfs"
+  namespace  = "kube-system"
+}
 resource "kubernetes_storage_class" "standard" {
-  storage_provisioner = "rancher.io/local-path"
   metadata {
     name = "standard"
     annotations = {
       "storageclass.kubernetes.io/is-default-class" = "true"
     }
   }
+  storage_provisioner = "nfs.csi.k8s.io"
+  reclaim_policy      = "Delete"
+  volume_binding_mode = "WaitForFirstConsumer"
+  parameters = {
+    server = "192.168.122.5"
+    share = "/export"
+  }
+  mount_options = ["nfsvers=4.2"]
+  depends_on = [
+    kubernetes_storage_class.standard
+  ]
 }
+
+# in case we're running under kind we can uncomment this:
+# resource "kubernetes_storage_class" "standard" {
+#   storage_provisioner = "rancher.io/local-path"
+#   metadata {
+#     name = "standard"
+#     annotations = {
+#       "storageclass.kubernetes.io/is-default-class" = "true"
+#     }
+#   }
+# }
 
 resource "helm_release" "cert-manager" {
   name       = "cert-manager"
@@ -76,8 +77,10 @@ resource "helm_release" "cert-manager" {
     value = true
   }
 }
+
 resource "kubectl_manifest" "ca" {
-  force_new = true
+  force_new = false
+  validate_schema = false
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -87,11 +90,11 @@ spec:
   selfSigned: {}
 EOF
   depends_on = [
-    helm_release.cert-manager,
+    helm_release.cert-manager
   ]
 }
 resource "kubectl_manifest" "ca-cert" {
-  force_new = true
+  force_new = false
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -115,7 +118,7 @@ EOF
   ]
 }
 resource "kubectl_manifest" "ca-issuer" {
-  force_new = true
+  force_new = false
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -149,9 +152,6 @@ resource "helm_release" "ingress-nginx" {
     name = "controller.service.externalTrafficPolicy"
     value = "Local"
   }
-  depends_on = [
-    kubectl_manifest.ca-issuer
-  ]
 }
 
 
@@ -182,7 +182,6 @@ resource "helm_release" "dashboard" {
   ]
 }
 resource "kubernetes_ingress_v1" "dashboard" {
-  wait_for_load_balancer = true
   metadata {
     name = "kubernetes-dashboard" 
     namespace = "kube-system"

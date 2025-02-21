@@ -47,7 +47,6 @@ resource "helm_release" "postgres-ui" {
   ]
 }
 resource "kubernetes_ingress_v1" "postgres-ui" {
-  wait_for_load_balancer = true
   metadata {
     name = "postgres-ui"
     namespace = "zalando-postgres"

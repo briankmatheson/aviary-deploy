@@ -10,7 +10,6 @@ resource "helm_release" "rustpad" {
   ]
 }
 resource "kubernetes_ingress_v1" "rustpad" {
-  wait_for_load_balancer = true
   metadata {
     name = "rustpad" 
     namespace = "rustpad"

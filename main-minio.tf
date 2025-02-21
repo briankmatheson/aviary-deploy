@@ -110,7 +110,7 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 1Ti
+            storage: 1Gi
         storageClassName: standard
       status: {}
     volumesPerServer: 4
@@ -131,7 +131,6 @@ EOF
   ]
 }
 resource "kubernetes_ingress_v1" "minio" {
-  wait_for_load_balancer = true
   metadata {
     name = "minio"
     namespace = "minio"
