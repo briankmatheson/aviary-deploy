@@ -11,8 +11,6 @@ resource "helm_release" "grafana" {
   }
 
   depends_on = [
-    kubernetes_storage_class.standard,
-    helm_release.ingress-nginx,
     helm_release.prometheus,
   ]
 }

@@ -1,3 +1,4 @@
+
 resource "kubernetes_manifest" "l2-advertisements" {
   manifest = {    "apiVersion" = "metallb.io/v1beta1"
     "kind"       = "L2Advertisement"
@@ -45,7 +46,7 @@ resource "kubernetes_storage_class" "standard" {
   reclaim_policy      = "Delete"
   volume_binding_mode = "WaitForFirstConsumer"
   parameters = {
-    server = "192.168.122.5"
+    server = "192.168.122.176"
     share = "/export"
   }
   mount_options = ["nfsvers=4.2"]
@@ -154,6 +155,20 @@ resource "helm_release" "ingress-nginx" {
   }
 }
 
+resource "kubernetes_ingress_class_v1" "nginx" {
+  metadata {
+    name = "nginx"
+  }
+
+  spec {
+    controller = "k8s.io/ingress-nginx"
+    parameters {
+      api_group = "k8s.example.com"
+      kind      = "IngressParameters"
+      name      = "external-lb"
+    }
+  }
+}
 
 resource "helm_release" "dashboard" {
   name = "kubernetes-dashboard"
@@ -177,9 +192,6 @@ resource "helm_release" "dashboard" {
     name = "kong.enabled"
     value = false
   }
-  depends_on = [
-    helm_release.ingress-nginx
-  ]
 }
 resource "kubernetes_ingress_v1" "dashboard" {
   metadata {
@@ -216,6 +228,5 @@ resource "kubernetes_ingress_v1" "dashboard" {
   }
   depends_on = [
     helm_release.dashboard,
-    helm_release.ingress-nginx
   ]
 }

@@ -8,8 +8,6 @@ resource "helm_release" "mlflow" {
 
   depends_on = [
     helm_release.dashboard,
-    kubernetes_storage_class.standard,
-    helm_release.ingress-nginx,
   ]
 }
 resource "kubernetes_ingress_v1" "mlflow" {

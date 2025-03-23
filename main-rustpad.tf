@@ -6,7 +6,6 @@ resource "helm_release" "rustpad" {
   create_namespace = true
   depends_on = [
     helm_release.dashboard,
-    helm_release.ingress-nginx
   ]
 }
 resource "kubernetes_ingress_v1" "rustpad" {

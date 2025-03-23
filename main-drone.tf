@@ -55,8 +55,6 @@ resource "helm_release" "drone" {
   }
   depends_on = [
     helm_release.dashboard,
-    helm_release.ingress-nginx,
-    kubernetes_storage_class.standard
   ]
 }
 resource "kubectl_manifest" "gitea" {
@@ -86,7 +84,7 @@ kind: Role
 metadata:
   annotations:
   name: drone
-  namespace: default
+  namespace: drone
 rules:
 - apiGroups:
   - ""
@@ -118,7 +116,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: drone
-  namespace: default
+  namespace: drone
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -153,6 +151,10 @@ spec:
     spec:
       serviceAccount: drone
       serviceAccountName: drone
+      initContainers:
+      - name: init-myservice
+        image: drone/drone-runner-kube:latest
+        command: ['sh', '-c', "apk add ca-certificates && update-ca-certificates"]
       containers:
       - name: runner
         securityContext:
@@ -165,11 +167,13 @@ spec:
         - containerPort: 3000
         env:
         - name: DRONE_RPC_HOST
-          value: drone.drone:8080
+          value: drone:8080
         - name: DRONE_RPC_PROTO
           value: http
         - name: DRONE_RPC_SECRET
           value: "0xdeadbeef"
+        - name: DRONE_LOGS_DEBUG
+          value: "true"
       volumes:
       - name: run
         hostPath:

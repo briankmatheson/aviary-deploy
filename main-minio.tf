@@ -7,8 +7,6 @@ resource "helm_release" "minio" {
 
   depends_on = [
     helm_release.dashboard,
-    helm_release.ingress-nginx,
-    kubernetes_storage_class.standard
   ]
 }
 resource "kubectl_manifest" "minio-storage" {

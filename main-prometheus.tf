@@ -12,7 +12,5 @@ resource "helm_release" "prometheus" {
 
   depends_on = [
     helm_release.dashboard,
-    kubernetes_storage_class.standard,
-    helm_release.ingress-nginx,
   ]
 }
