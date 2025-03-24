@@ -136,6 +136,5 @@ spec:
 EOF
   depends_on = [
     kubernetes_ingress_v1.gitea,
-    kubectl_manifest.drone-rolebindings
   ]
 }
