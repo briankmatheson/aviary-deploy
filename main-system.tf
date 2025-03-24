@@ -46,7 +46,7 @@ resource "kubernetes_storage_class" "standard" {
   reclaim_policy      = "Delete"
   volume_binding_mode = "WaitForFirstConsumer"
   parameters = {
-    server = "192.168.122.176"
+    server = "192.168.122.5"
     share = "/export"
   }
   mount_options = ["nfsvers=4.2"]
@@ -147,7 +147,7 @@ resource "helm_release" "ingress-nginx" {
   }
   set {
     name = "service.externalIPs"
-    value = "ing-ip"
+    value = "192.168.122.6"
   }
   set {
     name = "controller.service.externalTrafficPolicy"
@@ -155,6 +155,7 @@ resource "helm_release" "ingress-nginx" {
   }
 }
 
+/*
 resource "kubernetes_ingress_class_v1" "nginx" {
   metadata {
     name = "nginx"
@@ -169,6 +170,7 @@ resource "kubernetes_ingress_class_v1" "nginx" {
     }
   }
 }
+*/
 
 resource "helm_release" "dashboard" {
   name = "kubernetes-dashboard"
@@ -228,5 +230,6 @@ resource "kubernetes_ingress_v1" "dashboard" {
   }
   depends_on = [
     helm_release.dashboard,
+    helm_release.ingress-nginx
   ]
 }

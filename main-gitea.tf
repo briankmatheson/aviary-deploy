@@ -24,15 +24,23 @@ resource "helm_release" "gitea" {
   }
   set {
     name = "global.hostAliases[0].ip"
-    value = "192.168.122.6"
+    value = "192.168.122.7"
+  }
+  set {
+    name = "global.hostAliases[1].ip"
+    value = "192.168.122.9"
+  }
+  set {
+    name = "global.hostAliases[1].hostnames[0]"
+    value = "ssh.gitea.local"
   }
   set {
     name = "global.hostAliases[0].hostnames[0]"
-    value = "gitea.local"
+    value = "gitea"
   }
   set {
     name = "service.ssh.externalHost"
-    value = "gitea.local"
+    value = "ssh.gitea.local"
   }
   set {
     name  = "service.ssh.type"

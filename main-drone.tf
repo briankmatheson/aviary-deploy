@@ -47,11 +47,11 @@ resource "helm_release" "drone" {
   }
   set {
     name = "env.DRONE_GITEA_CLIENT_ID"
-    value = "6e7195ca-f7ca-4847-ad84-ed2b1cb42c16"
+    value = "da5d205c-7872-446e-977a-0210b4f09f23"
   }
   set {
     name = "env.DRONE_GITEA_CLIENT_SECRET"
-    value = "gto_4gelppl5xtwr7jvpin7lhojvmutkzezpajpy7peetdxtoipvptyq"
+    value = "gto_p2kfpcs7nxevlveizb4lqwbqjofsxcuphyy7lpjohekvqh5i7nwa"
   }
   depends_on = [
     helm_release.dashboard,
