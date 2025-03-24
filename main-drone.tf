@@ -47,16 +47,14 @@ resource "helm_release" "drone" {
   }
   set {
     name = "env.DRONE_GITEA_CLIENT_ID"
-    value = "6e7195ca-f7ca-4847-ad84-ed2b1cb42c16"
+    value = "da5d205c-7872-446e-977a-0210b4f09f23"
   }
   set {
     name = "env.DRONE_GITEA_CLIENT_SECRET"
-    value = "gto_4gelppl5xtwr7jvpin7lhojvmutkzezpajpy7peetdxtoipvptyq"
+    value = "gto_p2kfpcs7nxevlveizb4lqwbqjofsxcuphyy7lpjohekvqh5i7nwa"
   }
   depends_on = [
     helm_release.dashboard,
-    helm_release.ingress-nginx,
-    helm_release.nfs
   ]
 }
 resource "kubectl_manifest" "gitea" {
@@ -76,21 +74,114 @@ spec:
   type: ExternalName
 EOF
   depends_on = [
-    helm_release.drone,
-    kubernetes_ingress_v1.cloudtty
+    helm_release.drone
   ]
 }
-
-
-/*
-        - mountPath: /etc/ssl/certs
-          name: ca-certs
-          readOnly: true
-
-      - configMap:
-          defaultMode: 420 
-          name: ca-certs
-        name: ca-certs
-
-
-*/
+resource "kubectl_manifest" "drone-role" {
+    yaml_body = <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+  name: drone
+  namespace: drone
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/log
+  verbs:
+  - get
+  - create
+  - delete
+  - list
+  - watch
+  - update
+EOF
+  depends_on = [
+    helm_release.drone
+  ]
+}
+resource "kubectl_manifest" "drone-rolebindings" {
+  yaml_body = <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: drone
+  namespace: drone
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: drone
+subjects:
+- kind: ServiceAccount
+  name: drone
+  namespace: drone
+EOF
+  depends_on = [
+    helm_release.drone
+  ]
+}
+resource "kubectl_manifest" "drone-runner" {
+  yaml_body = <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone-runner
+  namespace: drone
+  labels:
+    app.kubernetes.io/name: drone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: drone
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: drone
+    spec:
+      serviceAccount: drone
+      serviceAccountName: drone
+      initContainers:
+      - name: init-myservice
+        image: drone/drone-runner-kube:latest
+        command: ['sh', '-c', "apk add ca-certificates && update-ca-certificates"]
+      containers:
+      - name: runner
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /var/run
+          name: run
+        image: drone/drone-runner-kube:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DRONE_RPC_HOST
+          value: drone:8080
+        - name: DRONE_RPC_PROTO
+          value: http
+        - name: DRONE_RPC_SECRET
+          value: "0xdeadbeef"
+        - name: DRONE_LOGS_DEBUG
+          value: "true"
+      volumes:
+      - name: run
+        hostPath:
+          path: /var/run
+          type: Directory
+EOF
+  depends_on = [
+    kubectl_manifest.drone-rolebindings,
+    kubectl_manifest.drone-role
+  ]
+}

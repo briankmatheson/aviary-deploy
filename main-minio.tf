@@ -7,8 +7,6 @@ resource "helm_release" "minio" {
 
   depends_on = [
     helm_release.dashboard,
-    helm_release.ingress-nginx,
-    helm_release.nfs
   ]
 }
 resource "kubectl_manifest" "minio-storage" {
@@ -110,7 +108,7 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 1Ti
+            storage: 1Gi
         storageClassName: standard
       status: {}
     volumesPerServer: 4
@@ -131,15 +129,15 @@ EOF
   ]
 }
 resource "kubernetes_ingress_v1" "minio" {
-  wait_for_load_balancer = true
   metadata {
     name = "minio"
     namespace = "minio"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx",
       "cert-manager.io/cluster-issuer" =  "ca-issuer"
-      //  nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-      // nginx.ingress.kubernetes.io/proxy-body-size: 2048g
+      "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
+      "nginx.ingress.kubernetes.io/client-max-body-size" = "1024g"
+      "nginx.ingress.kubernetes.io/proxy-body-size" = "1024g"
     }
   }
   spec {
@@ -151,9 +149,9 @@ resource "kubernetes_ingress_v1" "minio" {
           path = "/"
           backend {
             service {
-	      name = "minio"
+	      name = "minio0-console"
               port {
-		number = 443
+		number = 9443
 	      }
 	    }
           }

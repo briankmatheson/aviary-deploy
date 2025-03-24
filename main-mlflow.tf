@@ -8,12 +8,9 @@ resource "helm_release" "mlflow" {
 
   depends_on = [
     helm_release.dashboard,
-    helm_release.nfs,
-    helm_release.ingress-nginx,
   ]
 }
 resource "kubernetes_ingress_v1" "mlflow" {
-  wait_for_load_balancer = true
   metadata {
     name = "mlflow"
     namespace = "mlflow"

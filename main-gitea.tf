@@ -1,3 +1,12 @@
+
+# gitea is a github-like git server that can be self-hosted.  There
+# are a wide variety of install options which can be gleaned from the
+# chart's values file.  We set a subset here to support
+# * persistence via our standard nfs storage class
+# * ssh support via a separate lb IP
+# * tls for http interfaces
+#
+# NOTE: Most of the redundancy functionality is turned off.
 resource "helm_release" "gitea" {
   name       = "gitea"
   repository = "https://dl.gitea.com/charts/"
@@ -15,15 +24,23 @@ resource "helm_release" "gitea" {
   }
   set {
     name = "global.hostAliases[0].ip"
-    value = "10.23.99.8"
+    value = "192.168.122.7"
+  }
+  set {
+    name = "global.hostAliases[1].ip"
+    value = "192.168.122.9"
+  }
+  set {
+    name = "global.hostAliases[1].hostnames[0]"
+    value = "ssh.gitea.local"
   }
   set {
     name = "global.hostAliases[0].hostnames[0]"
-    value = "gitea.local"
+    value = "gitea"
   }
   set {
     name = "service.ssh.externalHost"
-    value = "gitea.local"
+    value = "ssh.gitea.local"
   }
   set {
     name  = "service.ssh.type"
@@ -31,7 +48,7 @@ resource "helm_release" "gitea" {
   }
   set {
     name = "service.ssh.loadBalancerIP"
-    value = "10.23.99.7"
+    value = "192.168.122.9"
   }
   set {
     name = "ingress.hosts[0].host"
@@ -63,12 +80,9 @@ resource "helm_release" "gitea" {
   }
   depends_on = [
     helm_release.dashboard,
-    helm_release.ingress-nginx,
-    helm_release.nfs
   ]
 }
 resource "kubernetes_ingress_v1" "gitea" {
-  wait_for_load_balancer = true
   metadata {
     name = "gitea"
     namespace = "gitea"
@@ -78,8 +92,6 @@ resource "kubernetes_ingress_v1" "gitea" {
     }
   }
   depends_on = [
-    helm_release.nfs,
-    helm_release.ingress-nginx,
     helm_release.gitea
   ]
   spec {
@@ -123,7 +135,7 @@ spec:
   type: ExternalName
 EOF
   depends_on = [
-    helm_release.gitea,
-    helm_release.drone
+    kubernetes_ingress_v1.gitea,
+    kubectl_manifest.drone-rolebindings
   ]
 }

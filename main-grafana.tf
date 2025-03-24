@@ -11,13 +11,10 @@ resource "helm_release" "grafana" {
   }
 
   depends_on = [
-    helm_release.nfs,
-    helm_release.ingress-nginx,
     helm_release.prometheus,
   ]
 }
 resource "kubernetes_ingress_v1" "grafana" {
-  wait_for_load_balancer = true
   metadata {
     name = "grafana"
     namespace = "grafana"

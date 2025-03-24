@@ -1,3 +1,4 @@
+
 resource "kubernetes_manifest" "l2-advertisements" {
   manifest = {    "apiVersion" = "metallb.io/v1beta1"
     "kind"       = "L2Advertisement"
@@ -19,10 +20,10 @@ resource "kubernetes_manifest" "ing-ip" {
     }
     "spec"        = {
       "addresses" = [
-	"10.23.99.4/32",
-	"10.23.99.5/32",
-	"10.23.99.6/32",
-	"10.23.99.7/32"
+	"192.168.122.6/32",
+	"192.168.122.7/32",
+	"192.168.122.8/32",
+	"192.168.122.9/32"
       ]
     }
   }
@@ -45,14 +46,25 @@ resource "kubernetes_storage_class" "standard" {
   reclaim_policy      = "Delete"
   volume_binding_mode = "WaitForFirstConsumer"
   parameters = {
-    server = "10.23.99.1"
-    share = "/export/fast-nfs"
+    server = "192.168.122.5"
+    share = "/export"
   }
   mount_options = ["nfsvers=4.2"]
   depends_on = [
-    helm_release.nfs
+    kubernetes_storage_class.standard
   ]
 }
+
+# in case we're running under kind we can uncomment this:
+# resource "kubernetes_storage_class" "standard" {
+#   storage_provisioner = "rancher.io/local-path"
+#   metadata {
+#     name = "standard"
+#     annotations = {
+#       "storageclass.kubernetes.io/is-default-class" = "true"
+#     }
+#   }
+# }
 
 resource "helm_release" "cert-manager" {
   name       = "cert-manager"
@@ -66,8 +78,10 @@ resource "helm_release" "cert-manager" {
     value = true
   }
 }
+
 resource "kubectl_manifest" "ca" {
-  force_new = true
+  force_new = false
+  validate_schema = false
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -77,11 +91,11 @@ spec:
   selfSigned: {}
 EOF
   depends_on = [
-    helm_release.cert-manager,
+    helm_release.cert-manager
   ]
 }
 resource "kubectl_manifest" "ca-cert" {
-  force_new = true
+  force_new = false
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -105,7 +119,7 @@ EOF
   ]
 }
 resource "kubectl_manifest" "ca-issuer" {
-  force_new = true
+  force_new = false
   yaml_body = <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -133,17 +147,30 @@ resource "helm_release" "ingress-nginx" {
   }
   set {
     name = "service.externalIPs"
-    value = "ing-ip"
+    value = "192.168.122.6"
   }
   set {
     name = "controller.service.externalTrafficPolicy"
     value = "Local"
   }
-  depends_on = [
-    kubectl_manifest.ca-issuer
-  ]
 }
 
+/*
+resource "kubernetes_ingress_class_v1" "nginx" {
+  metadata {
+    name = "nginx"
+  }
+
+  spec {
+    controller = "k8s.io/ingress-nginx"
+    parameters {
+      api_group = "k8s.example.com"
+      kind      = "IngressParameters"
+      name      = "external-lb"
+    }
+  }
+}
+*/
 
 resource "helm_release" "dashboard" {
   name = "kubernetes-dashboard"
@@ -167,18 +194,15 @@ resource "helm_release" "dashboard" {
     name = "kong.enabled"
     value = false
   }
-  depends_on = [
-    helm_release.ingress-nginx
-  ]
 }
 resource "kubernetes_ingress_v1" "dashboard" {
-  wait_for_load_balancer = true
   metadata {
     name = "kubernetes-dashboard" 
     namespace = "kube-system"
     annotations = {
       "kubernetes.io/ingress.class" = "nginx"
       "cert-manager.io/cluster-issuer" = "ca-issuer"
+      "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
     }
   }
   spec {
@@ -190,9 +214,9 @@ resource "kubernetes_ingress_v1" "dashboard" {
           path = "/"
           backend {
             service {
-	      name = "kubernetes-dashboard-web"
+	      name = "kubernetes-dashboard-kong-proxy"
               port {
-		number = 80
+		number = 443
 	      }
 	    }
           }
