@@ -1,4 +1,3 @@
-
 # gitea is a github-like git server that can be self-hosted.  There
 # are a wide variety of install options which can be gleaned from the
 # chart's values file.  We set a subset here to support
@@ -9,79 +8,46 @@
 # NOTE: Most of the redundancy functionality is turned off.
 resource "helm_release" "gitea" {
   name       = "gitea"
-  repository = "https://dl.gitea.com/charts/"
   chart      = "gitea"
-  namespace  = "gitea"
+  repository = "https://dl.gitea.io/charts/"
+  namespace  = var.gitea_namespace
   create_namespace = true
 
   set {
-    name = "gitea.admin.password"
-    value = "rrrrrrrr"
+    name  = "admin.password"
+    value = var.gitea_admin_password
   }
   set {
-    name = "global.storageClass"
-    value = "standard"
+    name  = "global.storageClass"
+    value = var.global_storage_class
   }
   set {
-    name = "global.hostAliases[0].ip"
-    value = "192.168.122.7"
+    name  = "ssh.externalHost"
+    value = var.ssh_external_host
   }
   set {
-    name = "global.hostAliases[1].ip"
-    value = "192.168.122.9"
+    name  = "ssh.loadBalancerIP"
+    value = var.ssh_load_balancer_ip
   }
   set {
-    name = "global.hostAliases[1].hostnames[0]"
-    value = "ssh.gitea.local"
+    name  = "ingress.hosts"
+    value = join(",", var.ingress_hosts)
   }
   set {
-    name = "global.hostAliases[0].hostnames[0]"
-    value = "gitea"
+    name  = "redis.enabled"
+    value = var.redis_enabled
   }
   set {
-    name = "service.ssh.externalHost"
-    value = "ssh.gitea.local"
+    name  = "postgresql.enabled"
+    value = var.postgresql_enabled
   }
-  set {
-    name  = "service.ssh.type"
-    value = "LoadBalancer"
-  }
-  set {
-    name = "service.ssh.loadBalancerIP"
-    value = "192.168.122.9"
-  }
-  set {
-    name = "ingress.hosts[0].host"
-    value = "gitea"
-  }
-  set {
-    name = "ingress.hosts[1].host"
-    value = "gitea.local"
-  }
-  set {
-    name = "ingress.hosts[2].host"
-    value = "ssh.gitea.local"
-  }
-  set {
-    name = "redis-cluster.enabled"
-    value = false
-  }
-  set {
-    name = "redis.enabled"
-    value = true
-  }
-  set {
-    name = "postgresql-ha.enabled"
-    value = false
-  }
-  set {
-    name = "postgresql.enabled"
-    value = true
-  }
+
   depends_on = [
-    helm_release.dashboard,
+    helm_release.redis,
+    helm_release.postgres,
   ]
 }
+
 resource "kubernetes_ingress_v1" "gitea" {
   metadata {
     name = "gitea"

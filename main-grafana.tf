@@ -2,48 +2,49 @@ resource "helm_release" "grafana" {
   name       = "grafana"
   chart      = "grafana"
   repository = "https://grafana.github.io/helm-charts"
-  namespace  = "grafana"
+  namespace  = var.grafana_namespace
   create_namespace = true
 
   set {
     name  = "adminPassword"
-    value = "admin"
+    value = var.grafana_admin_password
   }
 
   depends_on = [
     helm_release.prometheus,
   ]
 }
+
 resource "kubernetes_ingress_v1" "grafana" {
   metadata {
-    name = "grafana"
-    namespace = "grafana"
+    name      = "grafana"
+    namespace = var.grafana_namespace
     annotations = {
-      "kubernetes.io/ingress.class" = "nginx",
-      "cert-manager.io/cluster-issuer" =  "ca-issuer"
+      "kubernetes.io/ingress.class"     = var.ingress_class
+      "cert-manager.io/cluster-issuer" = var.cluster_issuer
     }
   }
   spec {
-    ingress_class_name = "nginx"
+    ingress_class_name = var.ingress_class
     rule {
-      host = "grafana.local"
+      host = var.grafana_host
       http {
         path {
           path = "/"
           backend {
             service {
-	      name = "grafana"
+              name = "grafana"
               port {
-		number = 80
-	      }
-	    }
+                number = 80
+              }
+            }
           }
         }
       }
     }
     tls {
-      secret_name = "grafana-tls"
-      hosts = [ "grafana" ]
+      secret_name = var.grafana_tls_secret_name
+      hosts       = [var.grafana_host]
     }
   }
   depends_on = [
