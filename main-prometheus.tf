@@ -2,12 +2,12 @@ resource "helm_release" "prometheus" {
   name       = "prometheus"
   chart      = "prometheus"
   repository = "https://prometheus-community.github.io/helm-charts"
-  namespace  = "prometheus"
+  namespace  = var.prometheus_namespace
   create_namespace = true
 
   set {
     name  = "adminPassword"
-    value = "admin"
+    value = var.prometheus_admin_password
   }
 
   depends_on = [
