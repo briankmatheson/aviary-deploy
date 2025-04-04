@@ -20,18 +20,17 @@ resource "helm_release" "pgdb" {
   ]
 }
 
-# Commented out duplicate resource
 /* Zalando Postgres */
-# resource "helm_release" "postgres" {
-#   name       = "postgres"
-#   repository = "https://opensource.zalando.com/postgres-operator/charts/postgres-operator"
-#   chart      = "postgres-operator"
-#   namespace  = var.zalando_postgres_namespace
-#   create_namespace = true
-#   depends_on = [
-#     helm_release.dashboard,
-#   ]
-# }
+resource "helm_release" "zalando_postgres" {
+  name       = "postgres"
+  repository = "https://opensource.zalando.com/postgres-operator/charts/postgres-operator"
+  chart      = "postgres-operator"
+  namespace  = var.zalando_postgres_namespace
+  create_namespace = true
+  depends_on = [
+    helm_release.dashboard,
+  ]
+}
 resource "helm_release" "postgres-ui" {
   name       = "postgres-ui"
   repository = "https://opensource.zalando.com/postgres-operator/charts/postgres-operator-ui"
