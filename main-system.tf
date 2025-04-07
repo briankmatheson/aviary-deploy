@@ -1,4 +1,3 @@
-
 resource "kubernetes_manifest" "l2-advertisements" {
   manifest = {    "apiVersion" = "metallb.io/v1beta1"
     "kind"       = "L2Advertisement"
@@ -19,12 +18,7 @@ resource "kubernetes_manifest" "ing-ip" {
       "namespace" = "metallb-system"
     }
     "spec"        = {
-      "addresses" = [
-	"192.168.122.6/32",
-	"192.168.122.7/32",
-	"192.168.122.8/32",
-	"192.168.122.9/32"
-      ]
+      "addresses" = var.metallb_ip_address_pool
     }
   }
 }
@@ -46,13 +40,10 @@ resource "kubernetes_storage_class" "standard" {
   reclaim_policy      = "Delete"
   volume_binding_mode = "WaitForFirstConsumer"
   parameters = {
-    server = "192.168.122.5"
-    share = "/export"
+    server = var.nfs_server
+    share  = var.nfs_share
   }
   mount_options = ["nfsvers=4.2"]
-  depends_on = [
-    kubernetes_storage_class.standard
-  ]
 }
 
 # in case we're running under kind we can uncomment this:
@@ -147,7 +138,7 @@ resource "helm_release" "ingress-nginx" {
   }
   set {
     name = "service.externalIPs"
-    value = "192.168.122.6"
+    value = var.ingress_nginx_external_ip
   }
   set {
     name = "controller.service.externalTrafficPolicy"
