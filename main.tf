@@ -1,3 +1,18 @@
+module "certmanager" {
+  source = "./modules/certmanager"
+}
+
+module "gitea" {
+  source = "./modules/gitea"
+}
+
+module "grafana" {
+  source = "./modules/grafana"
+}
+
+module "harbor" {
+  source = "./modules/harbor"
+}
 
 module "jupyterhub" {
   source = "./modules/jupyterhub"
@@ -33,20 +48,4 @@ module "system" {
 
 module "velero" {
   source = "./modules/velero"
-}
-
-module "harbor" {
-  source = "./modules/harbor"
-}
-
-module "grafana" {
-  source = "./modules/grafana"
-}
-
-module "gitea" {
-  source = "./modules/gitea"
-}
-
-module "certmanager" {
-  source = "./modules/certmanager"
 }
