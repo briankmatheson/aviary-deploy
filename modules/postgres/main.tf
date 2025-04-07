@@ -5,9 +5,6 @@ resource "helm_release" "postgres" {
   chart      = "pg-operator"
   namespace  = var.percona_postgres_namespace
   create_namespace = true
-  depends_on = [
-    helm_release.dashboard,
-  ]
 }
 resource "helm_release" "pgdb" {
   name       = "postgres"
@@ -15,7 +12,6 @@ resource "helm_release" "pgdb" {
   chart      = "pg-db"
   namespace  = var.percona_postgres_namespace
   depends_on = [
-    helm_release.dashboard,
     helm_release.postgres
   ]
 }
@@ -27,9 +23,6 @@ resource "helm_release" "zalando_postgres" {
   chart      = "postgres-operator"
   namespace  = var.zalando_postgres_namespace
   create_namespace = true
-  depends_on = [
-    helm_release.dashboard,
-  ]
 }
 resource "helm_release" "postgres-ui" {
   name       = "postgres-ui"

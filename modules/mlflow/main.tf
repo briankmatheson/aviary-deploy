@@ -4,10 +4,6 @@ resource "helm_release" "mlflow" {
   repository = "https://community-charts.github.io/helm-charts"
   namespace  = var.mlflow_namespace
   create_namespace = true
-
-  depends_on = [
-    helm_release.dashboard, 
-  ]
 }
 
 resource "kubernetes_ingress_v1" "mlflow" {

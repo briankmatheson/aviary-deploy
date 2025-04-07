@@ -53,9 +53,6 @@ resource "helm_release" "velero" {
     name = "initContainers[0].volumeMounts[0].name"
     value = var.velero_init_container_volume_name
   }
-  depends_on = [
-    helm_release.dashboard,
-  ]
 }
 resource "kubernetes_ingress_v1" "velero" {
   metadata {

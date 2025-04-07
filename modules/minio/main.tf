@@ -4,10 +4,6 @@ resource "helm_release" "minio" {
   chart      = "operator"
   namespace  = var.minio_namespace
   create_namespace = true
-
-  depends_on = [
-    helm_release.dashboard,
-  ]
 }
 resource "kubectl_manifest" "minio-storage" {
   yaml_body = <<EOF

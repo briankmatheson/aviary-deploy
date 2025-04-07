@@ -4,9 +4,6 @@ resource "helm_release" "rustpad" {
   chart      = "rustpad"
   namespace  = var.rustpad_namespace
   create_namespace = true
-  depends_on = [
-    helm_release.dashboard,
-  ]
 }
 resource "kubernetes_ingress_v1" "rustpad" {
   metadata {

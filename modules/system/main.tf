@@ -81,9 +81,6 @@ metadata:
 spec:
   selfSigned: {}
 EOF
-  depends_on = [
-    helm_release.cert-manager
-  ]
 }
 resource "kubectl_manifest" "ca-cert" {
   force_new = false

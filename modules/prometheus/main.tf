@@ -9,8 +9,4 @@ resource "helm_release" "prometheus" {
     name  = "adminPassword"
     value = var.prometheus_admin_password
   }
-
-  depends_on = [
-    helm_release.dashboard,
-  ]
 }
