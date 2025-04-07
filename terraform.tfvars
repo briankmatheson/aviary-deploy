@@ -87,22 +87,16 @@ velero_init_container_image = ""
 velero_init_container_mount_path = ""
 velero_init_container_volume_name = ""
 
-# MetalLB Variables
+# Values for System
 metallb_ip_address_pool = [
   "192.168.122.6/32",
   "192.168.122.7/32",
   "192.168.122.8/32",
   "192.168.122.9/32"
 ]
-
-# NFS Storage Variables
 nfs_server = "192.168.122.5"
 nfs_share = "/export"
-
-# Ingress-NGINX Variables
 ingress_nginx_external_ip = "192.168.122.6"
-
-# Kubernetes Dashboard Variables
 dashboard_ingress_host = "kubernetes-dashboard.local"
 dashboard_tls_secret_name = "kubernetes-dashboard-tls"
 
