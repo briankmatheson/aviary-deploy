@@ -14,6 +14,7 @@ resource "helm_release" "harbor" {
     value = var.harbor_ingress_host
   }
   set {
+
     name  = "expose.ingress.className"
     value = var.harbor_ingress_class
   }
