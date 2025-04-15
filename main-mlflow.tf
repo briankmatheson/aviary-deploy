@@ -2,44 +2,44 @@ resource "helm_release" "mlflow" {
   name       = "mlflow"
   chart      = "mlflow"
   repository = "https://community-charts.github.io/helm-charts"
-  namespace  = "mlflow"
+  namespace  = var.mlflow_namespace
   create_namespace = true
 
-
   depends_on = [
-    helm_release.dashboard,
+    helm_release.dashboard, 
   ]
 }
+
 resource "kubernetes_ingress_v1" "mlflow" {
   metadata {
-    name = "mlflow"
-    namespace = "mlflow"
+    name      = "mlflow"
+    namespace = var.mlflow_namespace
     annotations = {
-      "kubernetes.io/ingress.class" = "nginx",
-      "cert-manager.io/cluster-issuer" =  "ca-issuer"
+      "kubernetes.io/ingress.class"     = var.mlflow_ingress_class
+      "cert-manager.io/cluster-issuer" = var.mlflow_cluster_issuer
     }
   }
   spec {
-    ingress_class_name = "nginx"
+    ingress_class_name = var.mlflow_ingress_class
     rule {
-      host = "mlflow.local"
+      host = var.mlflow_host
       http {
         path {
           path = "/"
           backend {
             service {
-	      name = "mlflow"
+              name = "mlflow"
               port {
-		number = 5000
-	      }
-	    }
+                number = 5000
+              }
+            }
           }
         }
       }
     }
     tls {
-      secret_name = "mlflow-tls"
-      hosts = [ "mlflow.local" ]
+      secret_name = var.mlflow_tls_secret_name
+      hosts       = [var.mlflow_host]
     }
   }
   depends_on = [

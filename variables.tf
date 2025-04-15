@@ -1,6 +1,6 @@
 variable "kubeconfig" {
-  type = string
-  default = "/home/bmath/k8s/q11/kubeconfig.yaml"
+  type        = string
+  description = "Path to the Kubernetes configuration file."
 }
 
 

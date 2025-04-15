@@ -2,7 +2,7 @@ resource "helm_release" "minio" {
   name       = "minio"
   repository = "https://operator.min.io"
   chart      = "operator"
-  namespace  = "minio"
+  namespace  = var.minio_namespace
   create_namespace = true
 
   depends_on = [
@@ -15,11 +15,11 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: storage-configuration
-  namespace: minio
+  namespace: ${var.minio_namespace}
 stringData:
   config.env: |-
-    export MINIO_ROOT_USER="minio"
-    export MINIO_ROOT_PASSWORD="minio123"
+    export MINIO_ROOT_USER="${var.minio_root_user}"
+    export MINIO_ROOT_PASSWORD="${var.minio_root_password}"
     export MINIO_STORAGE_CLASS_STANDARD="EC:2"
     export MINIO_BROWSER="on"
 type: Opaque
@@ -131,36 +131,36 @@ EOF
 resource "kubernetes_ingress_v1" "minio" {
   metadata {
     name = "minio"
-    namespace = "minio"
+    namespace = var.minio_namespace
     annotations = {
-      "kubernetes.io/ingress.class" = "nginx",
-      "cert-manager.io/cluster-issuer" =  "ca-issuer"
+      "kubernetes.io/ingress.class" = var.minio_ingress_class
+      "cert-manager.io/cluster-issuer" =  var.minio_cluster_issuer
       "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
       "nginx.ingress.kubernetes.io/client-max-body-size" = "1024g"
       "nginx.ingress.kubernetes.io/proxy-body-size" = "1024g"
     }
   }
   spec {
-    ingress_class_name = "nginx"
+    ingress_class_name = var.minio_ingress_class
     rule {
-      host = "minio.local"
+      host = var.minio_host
       http {
         path {
           path = "/"
           backend {
             service {
-	      name = "minio0-console"
+              name = "minio0-console"
               port {
-		number = 9443
-	      }
-	    }
+                number = 9443
+              }
+            }
           }
         }
       }
     }
     tls {
-      secret_name = "minio-tls"
-      hosts = [ "minio.local" ]
+      secret_name = var.minio_tls_secret_name
+      hosts = [ var.minio_host ]
     }
   }
   depends_on = [

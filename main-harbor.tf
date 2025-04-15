@@ -2,37 +2,31 @@ resource "helm_release" "harbor" {
   name       = "harbor"
   repository = "https://helm.goharbor.io"
   chart      = "harbor"
-  namespace  = "harbor"
+  namespace  = var.harbor_namespace
   create_namespace = true
 
   set {
-    name = "expose.type"
-    value = "ingress"
+    name  = "expose.type"
+    value = var.harbor_expose_type
   }
   set {
-    name = "expose.ingress.hosts.core"
-    value = "harbor"
+    name  = "expose.ingress.hosts.core"
+    value = var.harbor_ingress_host
   }
   set {
-    name = "expose.ingress.tls.enabled"
-    value = true
+
+    name  = "expose.ingress.className"
+    value = var.harbor_ingress_class
   }
   set {
-    name = "expose.ingress.className"
-    value = "nginx"
+    name  = "externalURL"
+    value = var.harbor_external_url
   }
   set {
-    name = "expose.ingress.annotations[0]"
-    value = "cert-manager.io/cluster-issuer: ca-issuer"
+    name  = "ipFamily.ipv6.enabled"
+    value = var.harbor_ipv6_enabled
   }
-  set {
-    name = "externalURL"
-    value = "https://harbor"
-  }
-  set {
-    name = "ipFamily.ipv6.enabled"
-    value = false
-  }
+
   depends_on = [
     helm_release.dashboard,
   ]
