@@ -14,8 +14,16 @@ resource "helm_release" "harbor" {
     value = "harbor"
   }
   set {
+    name = "expose.ingress.tls.enabled"
+    value = true
+  }
+  set {
     name = "expose.ingress.className"
     value = "nginx"
+  }
+  set {
+    name = "expose.ingress.annotations[0]"
+    value = "cert-manager.io/cluster-issuer: ca-issuer"
   }
   set {
     name = "externalURL"
