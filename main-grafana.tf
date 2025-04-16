@@ -1,8 +1,8 @@
 resource "helm_release" "grafana" {
-  name       = "grafana"
-  chart      = "grafana"
-  repository = "https://grafana.github.io/helm-charts"
-  namespace  = var.grafana_namespace
+  name             = "grafana"
+  chart            = "grafana"
+  repository       = "https://grafana.github.io/helm-charts"
+  namespace        = var.grafana_namespace
   create_namespace = true
 
   set {
@@ -19,13 +19,17 @@ resource "kubernetes_ingress_v1" "grafana" {
   metadata {
     name      = "grafana"
     namespace = var.grafana_namespace
-    annotations = {
-      "kubernetes.io/ingress.class"     = var.ingress_class
-      "cert-manager.io/cluster-issuer" = var.cluster_issuer
-    }
+    annotations = merge(
+      local.default_annotations,
+      {
+        "cert-manager.io/cluster-issuer" = var.cluster_issuer
+      }
+    )
   }
+
   spec {
     ingress_class_name = var.ingress_class
+
     rule {
       host = var.grafana_host
       http {
@@ -42,11 +46,13 @@ resource "kubernetes_ingress_v1" "grafana" {
         }
       }
     }
+
     tls {
       secret_name = var.grafana_tls_secret_name
       hosts       = [var.grafana_host]
     }
   }
+
   depends_on = [
     helm_release.grafana
   ]

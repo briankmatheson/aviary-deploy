@@ -2,6 +2,7 @@
 variable "gitea_namespace" {
   description = "Namespace Gitea"
   type        = string
+  default     = "gitea"
 }
 
 # Gitea Admin Password
@@ -14,11 +15,12 @@ variable "gitea_admin_password" {
 variable "global_storage_class" {
   description = "Global storage class for Gitea"
   type        = string
+  default     = "standard"
 }
 
 # Host Aliases
 variable "host_aliases" {
-  description = "Host aliases for Gitea"
+  description = "Hostname aliases for Gitea"
   type        = list(object({
     ip        = string
     hostnames = list(string)
@@ -27,7 +29,7 @@ variable "host_aliases" {
 
 # SSH External Host
 variable "ssh_external_host" {
-  description = "External SSH host for Gitea"
+  description = "External SSH hostname for Gitea"
   type        = string
 }
 
@@ -39,7 +41,7 @@ variable "ssh_load_balancer_ip" {
 
 # Ingress Hosts
 variable "ingress_hosts" {
-  description = "Ingress hosts for Gitea"
+  description = "Ingress hostnames for Gitea"
   type        = list(string)
 }
 
@@ -47,10 +49,13 @@ variable "ingress_hosts" {
 variable "redis_enabled" {
   description = "Enable Redis for Gitea"
   type        = bool
+  default     = true
 }
 
 # PostgreSQL Enabled
 variable "postgresql_enabled" {
   description = "Enable PostgreSQL for Gitea"
   type        = bool
+  default     = true
 }
+

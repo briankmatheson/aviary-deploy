@@ -63,24 +63,24 @@ resource "kubernetes_ingress_v1" "gitea" {
   spec {
     ingress_class_name = "nginx"
     rule {
-      host = "gitea"
+      host = var.ingress_hosts[0]
       http {
         path {
           path = "/"
           backend {
             service {
-	      name = "gitea-http"
-              port {
-		number = 3000
-	      }
-	    }
+	              name = "gitea-http"
+                port {
+		             number = 3000
+	             }   
+	           }   
+           }
           }
-        }
+       }
       }
-    }
     tls {
       secret_name = "gitea-tls"
-      hosts = [ "gitea" ]
+      hosts = var.ingress_hosts
     }
   }
 }
@@ -92,7 +92,7 @@ metadata:
   labels:
     app: drone
   name: drone
-  namespace: gitea
+  namespace: 
 spec:
   externalName: ingress-nginx-controller.ingress-nginx.svc.cluster.local
   selector:
