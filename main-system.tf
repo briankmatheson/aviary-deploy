@@ -157,21 +157,21 @@ resource "helm_release" "dashboard" {
   create_namespace = true
 
   set {
-        name = "kong.env.proxy_listen"
-        value = "0.0.0.0:8443 http2 ssl"
-      }
+    name = "kong.env.proxy_listen"
+    value = "0.0.0.0:8443 http2 ssl"
+  }
   set {
-        name = "kong.env.admin_listen"
-        value = "0.0.0.0:8443 http2 ssl"
-      }
+    name = "kong.env.admin_listen"
+    value = "0.0.0.0:8443 http2 ssl"
+  }
   set {
-        name = "kong.env.status_listen"
-        value = "0.0.0.0:8443 http2 ssl"
-      }
+    name = "kong.env.status_listen"
+    value = "0.0.0.0:8443 http2 ssl"
+  }
   set {
-        name = "kong.enabled"
-        value = false
-      }
+    name = "kong.enabled"
+    value = false
+  }
 }
 resource "kubernetes_ingress_v1" "dashboard" {
   metadata {
