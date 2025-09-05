@@ -4,9 +4,7 @@ resource "kubernetes_manifest" "ing-ip" {
     "kind" = "CiliumLoadBalancerIPPool"
     "metadata" = {
       "name" = "ing-ip"
-      "spec" = {
-        "blocks" = var.metallb_ip_address_pool
-      }
+      "namespace" = "lb"
     }
   }
 }
@@ -52,10 +50,10 @@ resource "helm_release" "cert-manager" {
   namespace  = "cert-manager"
   create_namespace = true
 
-  set = [{
+  set {
     name = "crds.enabled"
     value = true
-  }]
+  }
 }
 
 resource "kubectl_manifest" "ca" {
@@ -120,20 +118,18 @@ resource "helm_release" "ingress-nginx" {
   chart      = "ingress-nginx"
   namespace  = "ingress-nginx"
   create_namespace = true
-  set = [
-    {
-      name  = "service.type"
-      value = "LoadBalancer"
-    },
-    {
-      name = "service.externalIPs"
-      value = var.ingress_nginx_external_ip
-    },
-    {
-      name = "controller.service.externalTrafficPolicy"
-      value = "Local"
-    }
-  ]
+  set {
+    name  = "service.type"
+    value = "LoadBalancer"
+  }
+  set {
+    name = "service.externalIPs"
+    value = var.ingress_nginx_external_ip
+  }
+  set {
+    name = "controller.service.externalTrafficPolicy"
+    value = "Local"
+  }
 }
 
 /*
@@ -159,24 +155,23 @@ resource "helm_release" "dashboard" {
   chart = "kubernetes-dashboard"
   namespace = "kube-system"
   create_namespace = true
-  set = [
-    {
-      name = "kong.env.proxy_listen"
-      value = "0.0.0.0:8443 http2 ssl"
-    },
-    {
-      name = "kong.env.admin_listen"
-      value = "0.0.0.0:8443 http2 ssl"
-    },
-    {
-      name = "kong.env.status_listen"
-      value = "0.0.0.0:8443 http2 ssl"
-    },
-    {
-      name = "kong.enabled"
-      value = false
-    }
-  ]
+
+  set {
+        name = "kong.env.proxy_listen"
+        value = "0.0.0.0:8443 http2 ssl"
+      }
+  set {
+        name = "kong.env.admin_listen"
+        value = "0.0.0.0:8443 http2 ssl"
+      }
+  set {
+        name = "kong.env.status_listen"
+        value = "0.0.0.0:8443 http2 ssl"
+      }
+  set {
+        name = "kong.enabled"
+        value = false
+      }
 }
 resource "kubernetes_ingress_v1" "dashboard" {
   metadata {

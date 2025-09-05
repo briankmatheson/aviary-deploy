@@ -13,36 +13,34 @@ resource "helm_release" "gitea" {
   namespace  = var.gitea_namespace
   create_namespace = true
 
-  set = [
-    {
-      name  = "admin.password"
-      value = var.gitea_admin_password
-    },
-    {
-      name  = "global.storageClass"
-      value = var.global_storage_class
-    },
-    {
-      name  = "ssh.externalHost"
-      value = var.ssh_external_host
-    },
-    {
-      name  = "ssh.loadBalancerIP"
-      value = var.ssh_load_balancer_ip
-    },
-    {
-      name  = "ingress.hosts"
-      value = join(",", var.ingress_hosts)
-    },
-    {
-      name  = "redis.enabled"
-      value = var.redis_enabled
-    },
-    {
-      name  = "postgresql.enabled"
-      value = var.postgresql_enabled
-    }
-  ]
+  set {
+    name  = "admin.password"
+    value = var.gitea_admin_password
+  }
+  set {
+    name  = "global.storageClass"
+    value = var.global_storage_class
+  }
+  set {
+    name  = "ssh.externalHost"
+    value = var.ssh_external_host
+  }
+  set {
+    name  = "ssh.loadBalancerIP"
+    value = var.ssh_load_balancer_ip
+  }
+  set {
+    name  = "ingress.hosts"
+    value = join(",", var.ingress_hosts)
+  }
+  set {
+    name  = "redis.enabled"
+    value = var.redis_enabled
+  }
+  set {
+    name  = "postgresql.enabled"
+    value = var.postgresql_enabled
+  }
   depends_on = [
     helm_release.redis,
     helm_release.postgres,

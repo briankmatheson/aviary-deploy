@@ -4,57 +4,55 @@ resource "helm_release" "velero" {
   chart      = "velero"
   namespace  = "velero"
   create_namespace = true
-  set = [
-    {
-      name  = "credentials.secretContents.cloud"
-      value = var.velero_credentials_secret
-    },
-    
-    {
-      name = "configuration.backupStorageLocation[0].name"
-      value = var.velero_backup_storage_name
-    },
-    {
-      name = "configuration.backupStorageLocation[0].provider"
-      value = var.velero_backup_storage_provider
-    },
-    {
-      name = "configuration.backupStorageLocation[0].bucket"
-      value = var.velero_backup_storage_bucket
-    },
-    {
-      name = "configuration.backupStorageLocation[0].config.region"
-      value = var.velero_backup_storage_region
-    },
-    {
-      name = "configuration.volumeSnapshotLocation[0].name"
-      value = var.velero_snapshot_location_name
-    },
-    {
-      name = "configuration.volumeSnapshotLocation[0].provider"
-      value = var.velero_snapshot_location_provider
-    },
-    {
-      name = "configuration.volumeSnapshotLocation[0].config.region"
-      value = var.velero_snapshot_location_region
-    },
-    {
-      name = "initContainers[0].name"
-      value = var.velero_init_container_name
-    },
-    {
-      name = "initContainers[0].image"
-      value = var.velero_init_container_image
-    },
-    {
-      name = "initContainers[0].volumeMounts[0].mountPath"
-      value = var.velero_init_container_mount_path
-    },
-    {
-      name = "initContainers[0].volumeMounts[0].name"
-      value = var.velero_init_container_volume_name
-    }
-  ]
+  set {
+    name  = "credentials.secretContents.cloud"
+    value = var.velero_credentials_secret
+  }
+  set {
+    name = "configuration.backupStorageLocation[0].name"
+    value = var.velero_backup_storage_name
+  }
+  set {
+    name = "configuration.backupStorageLocation[0].provider"
+    value = var.velero_backup_storage_provider
+  }
+  set {
+    name = "configuration.backupStorageLocation[0].bucket"
+    value = var.velero_backup_storage_bucket
+  }
+  set {
+    name = "configuration.backupStorageLocation[0].config.region"
+    value = var.velero_backup_storage_region
+  }
+  set {
+    name = "configuration.volumeSnapshotLocation[0].name"
+    value = var.velero_snapshot_location_name
+  }
+  set {
+    name = "configuration.volumeSnapshotLocation[0].provider"
+    value = var.velero_snapshot_location_provider
+  }
+  set {
+    name = "configuration.volumeSnapshotLocation[0].config.region"
+    value = var.velero_snapshot_location_region
+  }
+  set {
+    name = "initContainers[0].name"
+    value = var.velero_init_container_name
+  }
+  set {
+    name = "initContainers[0].image"
+    value = var.velero_init_container_image
+  }
+  set {
+    name = "initContainers[0].volumeMounts[0].mountPath"
+    value = var.velero_init_container_mount_path
+  }
+  set {
+    name = "initContainers[0].volumeMounts[0].name"
+    value = var.velero_init_container_volume_name
+  }
+  
   depends_on = [
     helm_release.dashboard,
   ]
