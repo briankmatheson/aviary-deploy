@@ -1,5 +1,5 @@
 # Kubernetes configuration
-kubeconfig = "/home/bmath/k8s/q11/kubeconfig.yaml"
+kubeconfig = "/home/bmath/k8s/x0/kubeconfig.yaml"
 
 # Grafana Variables
 grafana_namespace       = "grafana"
@@ -92,9 +92,9 @@ metallb_ip_address_pool = [
   "192.168.122.6/32",
   "192.168.122.7/32",
   "192.168.122.8/32",
-  "192.168.122.9/32"
+  "192.168.122.9/32",
 ]
-nfs_server = "192.168.122.5"
+nfs_server = "192.168.122.25"
 nfs_share = "/export"
 ingress_nginx_external_ip = "192.168.122.6"
 dashboard_ingress_host = "kubernetes-dashboard.local"
