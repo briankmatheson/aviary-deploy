@@ -4,7 +4,6 @@ resource "kubernetes_manifest" "ing-ip" {
     "kind" = "CiliumLoadBalancerIPPool"
     "metadata" = {
       "name" = "ing-ip"
-      "namespace" = "lb"
       "spec" = {
         "blocks" = var.metallb_ip_address_pool
       }
