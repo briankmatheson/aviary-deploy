@@ -42,7 +42,7 @@ resource "helm_release" "gitea" {
       name  = "postgresql.enabled"
       value = var.postgresql_enabled
     }
-  }
+  ]
   depends_on = [
     helm_release.redis,
     helm_release.postgres,

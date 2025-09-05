@@ -5,10 +5,10 @@ resource "helm_release" "prometheus" {
   namespace  = var.prometheus_namespace
   create_namespace = true
 
-  set {
+  set = [ {
     name  = "adminPassword"
     value = var.prometheus_admin_password
-  }
+  } ]
 
   depends_on = [
     helm_release.dashboard,

@@ -10,7 +10,6 @@ resource "helm_release" "redis" {
       name  = "auth.enabled"
       value = var.redis_auth_enabled
     },
-    
     {
       name  = "architecture"
       value = var.redis_architecture
