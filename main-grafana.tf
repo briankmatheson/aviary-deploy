@@ -5,10 +5,11 @@ resource "helm_release" "grafana" {
   namespace        = var.grafana_namespace
   create_namespace = true
 
-  set {
-    name  = "adminPassword"
-    value = var.grafana_admin_password
-  }
+  values = [
+    <<EOF
+    adminPassword: var.grafana_admin_password
+  EOF
+  ]
 
   depends_on = [
     helm_release.prometheus,

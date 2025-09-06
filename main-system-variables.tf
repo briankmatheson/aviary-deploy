@@ -1,7 +1,7 @@
-# MetalLB Variables
-variable "metallb_ip_address_pool" {
-  description = "The list of IP addresses for the MetalLB IP address pool."
-  type        = list(string)
+# Cilium Variables
+variable "cilium_ip_address_pool" {
+  description = "a cidr prefix for IP address pool."
+  type        = string
 }
 
 # NFS Storage Variables

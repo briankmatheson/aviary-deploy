@@ -26,7 +26,7 @@ host_aliases            = [
   { ip = "192.168.122.9", hostnames = ["ssh.gitea.local"] }
 ]
 ssh_external_host       = "ssh.gitea.local"
-ssh_load_balancer_ip    = "192.168.122.9"
+ssh_load_balancer_ip    = "192.168.123.9"
 ingress_hosts           = ["gitea", "gitea.local", "ssh.gitea.local"]
 redis_enabled           = true
 postgresql_enabled      = true
@@ -88,15 +88,10 @@ velero_init_container_mount_path = ""
 velero_init_container_volume_name = ""
 
 # Values for System
-metallb_ip_address_pool = [
-  "192.168.122.6/32",
-  "192.168.122.7/32",
-  "192.168.122.8/32",
-  "192.168.122.9/32",
-]
-nfs_server = "192.168.122.25"
-nfs_share = "/export"
-ingress_nginx_external_ip = "192.168.122.6"
+cilium_ip_address_pool = "192.168.123.8/29"
+nfs_server = "192.168.122.206"
+nfs_share = "/export/nfs"
+ingress_nginx_external_ip = "192.168.123.8"
 dashboard_ingress_host = "kubernetes-dashboard.local"
 dashboard_tls_secret_name = "kubernetes-dashboard-tls"
 

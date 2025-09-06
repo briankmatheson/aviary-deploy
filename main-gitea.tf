@@ -12,35 +12,19 @@ resource "helm_release" "gitea" {
   repository = "https://dl.gitea.io/charts/"
   namespace  = var.gitea_namespace
   create_namespace = true
+  
+  values = [
+    <<EOF
+    admin.password: var.gitea_admin_password
+    global.storageClass: var.global_storage_class
+    ssh.externalHost: var.ssh_external_host
+    ssh.loadBalancerIP: var.ssh_load_balancer_ip
+    ingress.hosts: join(",", var.ingress_hosts)
+    redis.enabled: var.redis_enabled
+    postgresql.enabled: var.postgresql_enabled
+EOF
+  ]
 
-  set {
-    name  = "admin.password"
-    value = var.gitea_admin_password
-  }
-  set {
-    name  = "global.storageClass"
-    value = var.global_storage_class
-  }
-  set {
-    name  = "ssh.externalHost"
-    value = var.ssh_external_host
-  }
-  set {
-    name  = "ssh.loadBalancerIP"
-    value = var.ssh_load_balancer_ip
-  }
-  set {
-    name  = "ingress.hosts"
-    value = join(",", var.ingress_hosts)
-  }
-  set {
-    name  = "redis.enabled"
-    value = var.redis_enabled
-  }
-  set {
-    name  = "postgresql.enabled"
-    value = var.postgresql_enabled
-  }
   depends_on = [
     helm_release.redis,
     helm_release.postgres,

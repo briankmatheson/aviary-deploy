@@ -1,15 +1,38 @@
-resource "kubernetes_manifest" "ing-ip" {
-  manifest = {
-    "apiVersion" = "cilium.io/v2alpha1"
-    "kind" = "CiliumLoadBalancerIPPool"
-    "metadata" = {
-      "name" = "ing-ip"
-      "namespace" = "lb"
-    }
-  }
+resource "kubectl_manifest" "ing-ip" {
+  force_new = false
+  yaml_body = <<EOF
+apiVersion: cilium.io/v2alpha1
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: ing-ip
+spec:
+  blocks:
+  - cidr: ${var.cilium_ip_address_pool}
+EOF
 }
 
-resource "helm_release" "nfs" {
+resource "kubectl_manifest" "l2" {
+  force_new = false
+  yaml_body = <<EOF
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: workers
+spec:
+  nodeSelector:
+    matchExpressions:
+    - key: node-role.kubernetes.io/control-plane
+      operator: DoesNotExist
+  interfaces:
+  - ^e+
+  externalIPs: true
+  loadBalancerIPs: true
+EOF
+}
+
+
+
+  resource "helm_release" "nfs" {
   name       = "csi-driver-nfs"
   repository = "https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts"
   chart      = "csi-driver-nfs"
@@ -43,17 +66,18 @@ resource "kubernetes_storage_class" "standard" {
 #   }
 # }
 
+  
 resource "helm_release" "cert-manager" {
   name       = "cert-manager"
   repository = "https://charts.jetstack.io"
   chart      = "cert-manager"
   namespace  = "cert-manager"
   create_namespace = true
-
-  set {
-    name = "crds.enabled"
-    value = true
-  }
+  values = [
+    <<EOF
+    crds.enabled: true
+    EOF
+  ]
 }
 
 resource "kubectl_manifest" "ca" {
@@ -118,18 +142,13 @@ resource "helm_release" "ingress-nginx" {
   chart      = "ingress-nginx"
   namespace  = "ingress-nginx"
   create_namespace = true
-  set {
-    name  = "service.type"
-    value = "LoadBalancer"
-  }
-  set {
-    name = "service.externalIPs"
-    value = var.ingress_nginx_external_ip
-  }
-  set {
-    name = "controller.service.externalTrafficPolicy"
-    value = "Local"
-  }
+  values = [
+    <<EOF
+    service.type: "LoadBalancer"
+    service.externalIPs: var.ingress_nginx_external_ip
+    controller.service.externalTrafficPolicy: "Local"
+  EOF
+  ]
 }
 
 /*
@@ -154,24 +173,14 @@ resource "helm_release" "dashboard" {
   repository = "https://kubernetes.github.io/dashboard/"
   chart = "kubernetes-dashboard"
   namespace = "kube-system"
-  create_namespace = true
-
-  set {
-    name = "kong.env.proxy_listen"
-    value = "0.0.0.0:8443 http2 ssl"
-  }
-  set {
-    name = "kong.env.admin_listen"
-    value = "0.0.0.0:8443 http2 ssl"
-  }
-  set {
-    name = "kong.env.status_listen"
-    value = "0.0.0.0:8443 http2 ssl"
-  }
-  set {
-    name = "kong.enabled"
-    value = false
-  }
+  values = [
+    <<EOF
+    kong.env.proxy_listen: "0.0.0.0:8443 http2 ssl"
+    kong.env.admin_listen: "0.0.0.0:8443 http2 ssl"
+    kong.env.status_listen: "0.0.0.0:8443 http2 ssl"
+    kong.enabled: false
+  EOF
+  ]
 }
 resource "kubernetes_ingress_v1" "dashboard" {
   metadata {

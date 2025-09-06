@@ -4,55 +4,22 @@ resource "helm_release" "velero" {
   chart      = "velero"
   namespace  = "velero"
   create_namespace = true
-  set {
-    name  = "credentials.secretContents.cloud"
-    value = var.velero_credentials_secret
-  }
-  set {
-    name = "configuration.backupStorageLocation[0].name"
-    value = var.velero_backup_storage_name
-  }
-  set {
-    name = "configuration.backupStorageLocation[0].provider"
-    value = var.velero_backup_storage_provider
-  }
-  set {
-    name = "configuration.backupStorageLocation[0].bucket"
-    value = var.velero_backup_storage_bucket
-  }
-  set {
-    name = "configuration.backupStorageLocation[0].config.region"
-    value = var.velero_backup_storage_region
-  }
-  set {
-    name = "configuration.volumeSnapshotLocation[0].name"
-    value = var.velero_snapshot_location_name
-  }
-  set {
-    name = "configuration.volumeSnapshotLocation[0].provider"
-    value = var.velero_snapshot_location_provider
-  }
-  set {
-    name = "configuration.volumeSnapshotLocation[0].config.region"
-    value = var.velero_snapshot_location_region
-  }
-  set {
-    name = "initContainers[0].name"
-    value = var.velero_init_container_name
-  }
-  set {
-    name = "initContainers[0].image"
-    value = var.velero_init_container_image
-  }
-  set {
-    name = "initContainers[0].volumeMounts[0].mountPath"
-    value = var.velero_init_container_mount_path
-  }
-  set {
-    name = "initContainers[0].volumeMounts[0].name"
-    value = var.velero_init_container_volume_name
-  }
-  
+  values = [
+    <<EOF
+    credentials.secretContents.cloud: var.velero_credentials_secret
+    configuration.backupStorageLocation[0].name: var.velero_backup_storage_name
+    configuration.backupStorageLocation[0].provider: var.velero_backup_storage_provider
+    configuration.backupStorageLocation[0].bucket: var.velero_backup_storage_bucket
+    configuration.backupStorageLocation[0].config.region: var.velero_backup_storage_region
+    configuration.volumeSnapshotLocation[0].name: var.velero_snapshot_location_name
+    configuration.volumeSnapshotLocation[0].provider: var.velero_snapshot_location_provider
+    configuration.volumeSnapshotLocation[0].config.region: var.velero_snapshot_location_region
+    initContainers[0].name: var.velero_init_container_name
+    initContainers[0].image: var.velero_init_container_image
+    initContainers[0].volumeMounts[0].mountPath: var.velero_init_container_mount_path
+    initContainers[0].volumeMounts[0].name: var.velero_init_container_volume_name
+EOF
+  ]
   depends_on = [
     helm_release.dashboard,
   ]
