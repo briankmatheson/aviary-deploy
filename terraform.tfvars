@@ -1,5 +1,5 @@
 # Kubernetes configuration
-kubeconfig = "/home/bmath/k8s/x0/kubeconfig.yaml"
+kubeconfig = "/home/bmath/k8s/x1/kubeconfig.yaml"
 
 # Grafana Variables
 grafana_namespace       = "grafana"

@@ -27,7 +27,6 @@ EOF
 
   depends_on = [
     helm_release.redis,
-    helm_release.postgres,
   ]
 }
 
