@@ -7,10 +7,15 @@ resource "helm_release" "harbor" {
 
   values = [
     <<EOF
-     expose.type = "ingress"
-     expose.ingress.className = "nginx"
-     expose.ingress.hosts.core = "harbor.local"
-     ipv6.enabled = false
+ingress.className: "nginx"
+expose.ingress.className: "nginx"
+ingress.hosts.core: "harbor.local"
+expose.ingress.hosts.core: "harbor.local"
+ipv6.enabled: false
+externalURL: https://harbor.local
+harborAdminPassword: admin
+
+
 EOF
   ]
 

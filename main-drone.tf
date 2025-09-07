@@ -16,7 +16,7 @@ resource "helm_release" "drone" {
     env.DRONE_NAMESPACE_DEFAULT: "drone"
     env.DRONE_SERVER_PROTO: "https"
     env.DRONE_RPC_SECRET: "0xdeadbeef"
-    env.DRONE_SERVER_HOST: "drone.local"
+    env.DRONE_SERVER_HOST: "drone"
     env.DRONE_GITEA_SERVER: "https://gitea"
     env.DRONE_GITEA_CLIENT_ID: "3b44aa85-1dcb-4efd-a902-13063eb5df6c"
     env.DRONE_GITEA_CLIENT_SECRET: "gto_ngd4yuzkc35mjveyhrkbz63slphhyqvxcx6qe5oecgtmuykhsafq"

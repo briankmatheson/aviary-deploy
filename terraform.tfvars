@@ -22,8 +22,8 @@ gitea_namespace       =  "gitea"
 gitea_admin_password    = "rrrrrrrr"
 global_storage_class    = "standard"
 host_aliases            = [
-  { ip = "192.168.122.7", hostnames = ["gitea"] },
-  { ip = "192.168.122.9", hostnames = ["ssh.gitea.local"] }
+  { ip = "192.168.123.8", hostnames = ["gitea"] },
+  { ip = "192.168.123.9", hostnames = ["ssh.gitea.local"] }
 ]
 ssh_external_host       = "ssh.gitea.local"
 ssh_load_balancer_ip    = "192.168.123.9"
