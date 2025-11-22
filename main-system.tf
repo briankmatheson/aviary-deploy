@@ -5,6 +5,8 @@ resource "helm_release" "cert-manager" {
   chart      = "cert-manager"
   namespace  = "cert-manager"
   create_namespace = true
+  reuse_values = true
+  take_ownership = true
 }
 resource "kubectl_manifest" "ca" {
   force_new = false
