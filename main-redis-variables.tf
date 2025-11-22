@@ -12,6 +12,6 @@ variable "redis_auth_enabled" {
 
 # Redis architecture
 variable "redis_architecture" {
-  description = "The architecture of the Redis deployment (e.g., standalone, cluster)."
+  description = "The architecture of the Redis deployment (standalone|replication)."
   type        = string
 }

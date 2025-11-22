@@ -1,71 +1,3 @@
-resource "kubectl_manifest" "ing-ip" {
-  force_new = false
-  yaml_body = <<EOF
-apiVersion: cilium.io/v2alpha1
-kind: CiliumLoadBalancerIPPool
-metadata:
-  name: ing-ip
-spec:
-  blocks:
-  - cidr: ${var.cilium_ip_address_pool}
-EOF
-}
-
-resource "kubectl_manifest" "l2" {
-  force_new = false
-  yaml_body = <<EOF
-apiVersion: "cilium.io/v2alpha1"
-kind: CiliumL2AnnouncementPolicy
-metadata:
-  name: workers
-spec:
-  nodeSelector:
-    matchExpressions:
-    - key: node-role.kubernetes.io/control-plane
-      operator: DoesNotExist
-  interfaces:
-  - ^e+
-  externalIPs: true
-  loadBalancerIPs: true
-EOF
-}
-
-
-
-  resource "helm_release" "nfs" {
-  name       = "csi-driver-nfs"
-  repository = "https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts"
-  chart      = "csi-driver-nfs"
-  namespace  = "kube-system"
-}
-resource "kubernetes_storage_class" "standard" {
-  metadata {
-    name = "standard"
-    annotations = {
-      "storageclass.kubernetes.io/is-default-class" = "true"
-    }
-  }
-  storage_provisioner = "nfs.csi.k8s.io"
-  reclaim_policy      = "Delete"
-  volume_binding_mode = "WaitForFirstConsumer"
-  parameters = {
-    server = var.nfs_server
-    share  = var.nfs_share
-  }
-  mount_options = ["nfsvers=4.2"]
-}
-
-# in case we're running under kind we can uncomment this:
-# resource "kubernetes_storage_class" "standard" {
-#   storage_provisioner = "rancher.io/local-path"
-#   metadata {
-#     name = "standard"
-#     annotations = {
-#       "storageclass.kubernetes.io/is-default-class" = "true"
-#     }
-#   }
-# }
-
   
 resource "helm_release" "cert-manager" {
   name       = "cert-manager"
@@ -73,13 +5,7 @@ resource "helm_release" "cert-manager" {
   chart      = "cert-manager"
   namespace  = "cert-manager"
   create_namespace = true
-  values = [
-    <<EOF
-    crds.enabled: true
-    EOF
-  ]
 }
-
 resource "kubectl_manifest" "ca" {
   force_new = false
   validate_schema = false
@@ -136,20 +62,49 @@ EOF
   ]
 }
 
-resource "helm_release" "ingress-nginx" {
-  name       = "ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
-  namespace  = "ingress-nginx"
-  create_namespace = true
+resource "helm_release" "cilium" {
+  name       = "cilium"
+  repository = "https://helm.cilium.io/"
+  chart      = "cilium"
+  namespace  = "kube-system"
   values = [
     <<EOF
-    service.type: "LoadBalancer"
-    service.externalIPs: var.ingress_nginx_external_ip
-    controller.service.externalTrafficPolicy: "Local"
-  EOF
+    EOF
   ]
 }
+
+resource "kubectl_manifest" "ing-ip" {
+  force_new = false
+  yaml_body = <<EOF
+apiVersion: cilium.io/v2alpha1
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: ing-ip
+spec:
+  blocks:
+  - cidr: ${var.cilium_ip_address_pool}
+EOF
+}
+
+resource "kubectl_manifest" "l2" {
+  force_new = false
+  yaml_body = <<EOF
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: workers
+spec:
+  nodeSelector:
+    matchExpressions:
+    - key: node-role.kubernetes.io/control-plane
+      operator: DoesNotExist
+  interfaces:
+  - ^e+
+  externalIPs: true
+  loadBalancerIPs: true
+EOF
+}
+
 
 /*
 resource "kubernetes_ingress_class_v1" "nginx" {
@@ -220,3 +175,53 @@ resource "kubernetes_ingress_v1" "dashboard" {
     helm_release.ingress-nginx
   ]
 }
+
+resource "helm_release" "nfs" {
+  name       = "csi-driver-nfs"
+  repository = "https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts"
+  chart      = "csi-driver-nfs"
+  namespace  = "kube-system"
+}
+resource "kubernetes_storage_class" "standard" {
+  metadata {
+    name = "standard"
+    annotations = {
+      "storageclass.kubernetes.io/is-default-class" = "true"
+    }
+  }
+  storage_provisioner = "nfs.csi.k8s.io"
+  reclaim_policy      = "Delete"
+  volume_binding_mode = "WaitForFirstConsumer"
+  parameters = {
+    server = var.nfs_server
+    share  = var.nfs_share
+  }
+  mount_options = ["nfsvers=4.2"]
+}
+
+# in case we're running under kind we can uncomment this:
+# resource "kubernetes_storage_class" "standard" {
+#   storage_provisioner = "rancher.io/local-path"
+#   metadata {
+#     name = "standard"
+#     annotations = {
+#       "storageclass.kubernetes.io/is-default-class" = "true"
+#     }
+#   }
+# }
+
+resource "helm_release" "ingress-nginx" {
+  name       = "ingress-nginx"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+  namespace  = "ingress-nginx"
+  create_namespace = true
+  values = [
+    <<EOF
+    service.type: "LoadBalancer"
+    service.externalIPs: var.ingress_nginx_external_ip
+    controller.service.externalTrafficPolicy: "Local"
+  EOF
+  ]
+}
+

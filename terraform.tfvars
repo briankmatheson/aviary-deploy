@@ -1,5 +1,5 @@
 # Kubernetes configuration
-kubeconfig = "/home/bmath/k8s/x0/kubeconfig.yaml"
+kubeconfig = "/home/bmath/k8s/x2/kubeconfig.yaml"
 
 # Grafana Variables
 grafana_namespace       = "grafana"
@@ -89,7 +89,7 @@ velero_init_container_volume_name = ""
 
 # Values for System
 cilium_ip_address_pool = "192.168.123.8/29"
-nfs_server = "192.168.122.206"
+nfs_server = "192.168.122.105"
 nfs_share = "/export/nfs"
 ingress_nginx_external_ip = "192.168.123.8"
 dashboard_ingress_host = "kubernetes-dashboard.local"

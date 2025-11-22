@@ -8,7 +8,7 @@ resource "helm_release" "redis" {
  values = [
     <<EOF
      auth.enabled: var.redis_auth_enabled
-     architecture: var.redis_architecture
+     architecture: standalone
 EOF
  ]
 }
