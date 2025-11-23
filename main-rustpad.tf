@@ -4,6 +4,15 @@ resource "helm_release" "rustpad" {
   chart      = "rustpad"
   namespace  = var.rustpad_namespace
   create_namespace = true
+
+
+  values = [ <<EOF
+persistence:
+  enabled: true
+  size: 4Gi
+EOF
+]
+  
   depends_on = [
     helm_release.dashboard,
   ]

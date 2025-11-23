@@ -7,11 +7,10 @@ resource "helm_release" "grafana" {
 
   values = [
     <<EOF
-adminPassword: var.grafana_admin_password
-grafana:
-  persistence:
-    enabled: true
-    size: 500Mi
+adminPassword: admin
+persistence:
+  enabled: true
+useStatefulSet: true
 EOF
   ]
 

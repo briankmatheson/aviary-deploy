@@ -5,6 +5,23 @@ resource "helm_release" "jupyterhub" {
   namespace  = var.jupyterhub_namespace
   create_namespace = true
 
+  values = [ <<EOF
+hub:
+  revisionHistoryLimit:
+  config:
+    Authenticator:
+      admin_users:
+        - admin
+      allowed_users:
+        - bmath
+    DummyAuthenticator:
+      password: yow
+    JupyterHub:
+      admin_access: true
+      authenticator_class: dummy
+EOF
+  ]
+  
   depends_on = [
     helm_release.dashboard,
   ]

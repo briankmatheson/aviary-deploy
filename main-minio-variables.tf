@@ -1,4 +1,4 @@
-# MinIO Namespace
+ # MinIO Namespace
 variable "minio_namespace" {
   description = "Namespace for MinIO"
   type        = string
@@ -39,3 +39,14 @@ variable "minio_root_password" {
   description = "Root password for MinIO"
   type        = string
 }
+variable "minio_velero_access" {
+  description = "username"
+  type        = string
+}
+
+variable "minio_velero_secret" {
+  description = "password"
+  type        = string
+}
+
+

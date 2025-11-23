@@ -160,9 +160,36 @@ resource "kubernetes_ingress_v1" "minio" {
     }
     tls {
       secret_name = var.minio_tls_secret_name
-      hosts = [ var.minio_host ]
+      hosts = [ "minio.local", "minio" ]
     }
   }
+  depends_on = [
+    helm_release.minio,
+  ]
+}
+
+resource "minio_s3_bucket" "velero-backups" {
+  bucket         = var.velero_backup_storage_bucket
+  acl            = "private"
+  object_locking = true
+}
+
+resource "kubectl_manifest" "minio-alias" {
+  yaml_body = <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: minio
+  name: minio
+  namespace: drone
+spec:
+  externalName: minio.minio.svc.cluster.local
+  selector:
+    app: minio
+  sessionAffinity: None
+  type: ExternalName
+EOF
   depends_on = [
     helm_release.minio,
   ]

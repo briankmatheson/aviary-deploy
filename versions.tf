@@ -9,5 +9,9 @@ terraform {
     kubectl = {
       source  = "gavinbunney/kubectl"
     }
+    minio = {
+      source = "aminueza/minio"
+      version = "3.3.0"
+    }
   }
 }

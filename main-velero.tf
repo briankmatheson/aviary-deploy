@@ -7,17 +7,21 @@ resource "helm_release" "velero" {
   values = [
     <<EOF
     credentials.secretContents.cloud: var.velero_credentials_secret
+
     configuration.backupStorageLocation[0].name: var.velero_backup_storage_name
     configuration.backupStorageLocation[0].provider: var.velero_backup_storage_provider
     configuration.backupStorageLocation[0].bucket: var.velero_backup_storage_bucket
     configuration.backupStorageLocation[0].config.region: var.velero_backup_storage_region
-    configuration.volumeSnapshotLocation[0].name: var.velero_snapshot_location_name
-    configuration.volumeSnapshotLocation[0].provider: var.velero_snapshot_location_provider
-    configuration.volumeSnapshotLocation[0].config.region: var.velero_snapshot_location_region
-    initContainers[0].name: var.velero_init_container_name
-    initContainers[0].image: var.velero_init_container_image
-    initContainers[0].volumeMounts[0].mountPath: var.velero_init_container_mount_path
-    initContainers[0].volumeMounts[0].name: var.velero_init_container_volume_name
+
+    deployNodeAgent: true
+        
+    schedules.hourly.schedule: "23 * * * *"
+    schedules.hourly.template.includeClusterResources: true
+    schedules.hourly.template.includedNamespaces[0]: '*'
+    schedules.hourly.template.includedResources[0]: '*'
+    schedules.hourly.template.storageLocation: aws
+    schedules.hourly.template.snapshotVolumes: true      
+    schedules.hourly.template.ttl: 72h0m0s```
 EOF
   ]
   depends_on = [

@@ -1,4 +1,4 @@
-  
+   
 resource "helm_release" "cert-manager" {
   name       = "cert-manager"
   repository = "https://charts.jetstack.io"
@@ -135,7 +135,8 @@ resource "helm_release" "dashboard" {
     kong.env.proxy_listen: "0.0.0.0:8443 http2 ssl"
     kong.env.admin_listen: "0.0.0.0:8443 http2 ssl"
     kong.env.status_listen: "0.0.0.0:8443 http2 ssl"
-    kong.enabled: false
+    kong.enabled: true
+    enableSkipLogin: true
   EOF
   ]
 }

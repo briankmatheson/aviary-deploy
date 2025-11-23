@@ -47,6 +47,8 @@ minio_ingress_class   = "nginx"
 minio_cluster_issuer  = "ca-issuer"
 minio_root_user       = "minio"
 minio_root_password   = "minio123"
+minio_velero_access   = "foo"
+minio_velero_secret   = "bar"
 
 # JupyterHub Variables
 jupyterhub_namespace       = "jupyterhub"
@@ -57,6 +59,7 @@ jupyterhub_cluster_issuer  = "ca-issuer"
 
 # Values for Rustpad
 rustpad_namespace = "rustpad"
+rustpad_pvc_size = 4
 rustpad_ingress_class = "nginx"
 rustpad_tls_secret_name = "rustpad-tls"
 rustpad_ingress_host = "rustpad.local"
@@ -80,14 +83,6 @@ velero_backup_storage_name = "backups"
 velero_backup_storage_provider = "aws"
 velero_backup_storage_bucket = "velero-backups"
 velero_backup_storage_region = "minio"
-velero_backup_storage_location = "minio"
-velero_snapshot_location_name = "local"
-velero_snapshot_location_provider = "aws"
-velero_snapshot_location_region = "minio,s3ForcePathStyle=\"true\""
-velero_init_container_name = ""
-velero_init_container_image = ""
-velero_init_container_mount_path = ""
-velero_init_container_volume_name = ""
 
 # Values for System
 cilium_ip_address_pool = "192.168.123.8/29"

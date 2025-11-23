@@ -17,10 +17,11 @@ ingress:
            pathType: Prefix
 env:
   DRONE_SERVER_HOST: drone.local
-  DRONE_GITEA_SERVER: http://gitea
+  DRONE_GITEA_SERVER: gitea.local
   DRONE_GITEA_CLIENT_ID: 742cce17-0aa6-4a59-a883-975edf8bfe1e
   DRONE_GITEA_CLIENT_SECRET: gto_zhrxwvmaxmk2yft5xlf6n5pljvig6bjk4ndl64cfgofvk6sav5ta
   DRONE_RPC_SECRET: "0xdeadbeef"
+  DRONE_USER_CREATE: username:gitea_admin,machine:false,admin:true
 EOF
   ]
 
@@ -95,13 +96,22 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: drone
-  namespace: drone
+  namespace: default
 EOF
   depends_on = [
     helm_release.drone
   ]
 }
 
+resource "kubernetes_service_account" "drone" {
+  metadata {
+    name = "drone"
+    namespace = "default"
+  }
+  depends_on = [
+    helm_release.drone
+  ]
+}
 
 resource "kubernetes_ingress_v1" "drone" {
   metadata {
@@ -135,7 +145,57 @@ resource "kubernetes_ingress_v1" "drone" {
       }
     tls {
       secret_name = "drone-tls"
-      hosts = ["drone.local"]
+      hosts = ["drone.local", "drone"]
     }
   }
+}
+
+resource "kubectl_manifest" "drone-runner" {
+  yaml_body = <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone-runner
+  namespace: default
+  labels:
+    app.kubernetes.io/name: drone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: drone
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: drone
+    spec:
+      serviceAccount: drone
+      serviceAccountName: drone
+      containers:
+      - name: runner
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /var/run
+          name: run
+        image: drone/drone-runner-kube:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DRONE_RPC_HOST
+          value: drone.drone:8080
+        - name: DRONE_RPC_PROTO
+          value: http
+        - name: DRONE_RPC_SECRET
+          value: "0xdeadbeef"
+      volumes:
+      - name: run
+        hostPath:
+          path: /var/run
+          type: Directory
+EOF
+  depends_on = [
+    helm_release.drone,
+    kubernetes_service_account.drone
+  ]
 }
