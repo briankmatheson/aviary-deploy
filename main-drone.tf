@@ -7,24 +7,24 @@ resource "helm_release" "drone" {
 
   values = [
     <<EOF
-
-
 ingress:
+  enabled: true
+  className: nginx
   hosts:
     - host: "drone.local"
       paths:
-        -  path: /
-           pathType: Prefix
+        - path: /
+          pathType: Prefix
 env:
   DRONE_SERVER_HOST: drone.local
-  DRONE_GITEA_SERVER: gitea.local
+  DRONE_SERVER_PROTO: https
+  DRONE_GITEA_SERVER: https://gitea
   DRONE_GITEA_CLIENT_ID: 742cce17-0aa6-4a59-a883-975edf8bfe1e
   DRONE_GITEA_CLIENT_SECRET: gto_zhrxwvmaxmk2yft5xlf6n5pljvig6bjk4ndl64cfgofvk6sav5ta
   DRONE_RPC_SECRET: "0xdeadbeef"
   DRONE_USER_CREATE: username:gitea_admin,machine:false,admin:true
 EOF
   ]
-
   depends_on = [
     helm_release.gitea,
   ]
@@ -88,7 +88,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: drone
-  namespace: drone
+  namespace: default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -113,6 +113,7 @@ resource "kubernetes_service_account" "drone" {
   ]
 }
 
+/*
 resource "kubernetes_ingress_v1" "drone" {
   metadata {
     name = "drone"
@@ -149,6 +150,7 @@ resource "kubernetes_ingress_v1" "drone" {
     }
   }
 }
+*/
 
 resource "kubectl_manifest" "drone-runner" {
   yaml_body = <<EOF

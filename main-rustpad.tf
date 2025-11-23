@@ -1,3 +1,4 @@
+
 resource "helm_release" "rustpad" {
   name       = "rustpad"
   repository = "oci://tccr.io/truecharts"
@@ -6,10 +7,12 @@ resource "helm_release" "rustpad" {
   create_namespace = true
 
 
-  values = [ <<EOF
+  values = [<<EOF
 persistence:
-  enabled: true
-  size: 4Gi
+  data:
+    enabled: true
+    mountPath: /home
+    size: 4Gi
 EOF
 ]
   
