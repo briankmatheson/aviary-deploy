@@ -9,16 +9,23 @@ resource "helm_release" "drone" {
     <<EOF
 ingress:
   enabled: true
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "ca-issuer"
   className: nginx
   hosts:
     - host: "drone.local"
       paths:
         - path: /
           pathType: Prefix
+  tls:
+    - secretName: drone-tls
+      hosts:
+        - drone.local
 env:
   DRONE_SERVER_HOST: drone.local
   DRONE_SERVER_PROTO: https
-  DRONE_GITEA_SERVER: https://gitea
+  DRONE_GITEA_SERVER: https://gitea.local
   DRONE_GITEA_CLIENT_ID: 742cce17-0aa6-4a59-a883-975edf8bfe1e
   DRONE_GITEA_CLIENT_SECRET: gto_zhrxwvmaxmk2yft5xlf6n5pljvig6bjk4ndl64cfgofvk6sav5ta
   DRONE_RPC_SECRET: "0xdeadbeef"
@@ -56,7 +63,7 @@ kind: Role
 metadata:
   annotations:
   name: drone
-  namespace: drone
+  namespace: default
 rules:
 - apiGroups:
   - ""
