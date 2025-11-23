@@ -4,12 +4,6 @@ variable "harbor_namespace" {
   type        = string
 }
 
-# Harbor Expose Type
-variable "harbor_expose_type" {
-  description = "Expose type for Harbor"
-  type        = string
-}
-
 # Harbor Ingress Host
 variable "harbor_ingress_host" {
   description = "Ingress host for Harbor"
@@ -19,6 +13,12 @@ variable "harbor_ingress_host" {
 # Harbor Ingress Class
 variable "harbor_ingress_class" {
   description = "Ingress class for Harbor"
+  type        = string
+}
+
+# Harbor ClusterIssuer
+variable "harbor_cluster_issuer" {
+  description = "issuer for Harbor"
   type        = string
 }
 

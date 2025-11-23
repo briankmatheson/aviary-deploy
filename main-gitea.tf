@@ -10,9 +10,38 @@ resource "helm_release" "gitea" {
   name       = "gitea"
   chart      = "gitea"
   repository = "https://dl.gitea.io/charts/"
-  namespace  = var.gitea_namespace
+  namespace  = "gitea"
   create_namespace = true
-  
+  /*
+  values = [ <<EOF
+admin:
+  password: admin
+global:
+  storageClass: standard
+ssh:
+  externalHost: bash.local
+  loadBalancerIP: 192.168.123.10
+ingress:
+  hosts:
+    - gitea.local
+    - ssh.gitea.local
+redis:
+  enabled: true
+postgresql:
+  enabled: true
+gitea:
+  config:
+    server:
+      ROOT_URL: "https://gitea.local/"
+service:
+  ssh:
+    enabled: true 
+    type: LoadBalancer
+    port: 2222 
+    externalPort: 22 
+EOF
+  ]
+*/
   values = [
     <<EOF
     admin.password: var.gitea_admin_password
@@ -24,7 +53,8 @@ resource "helm_release" "gitea" {
     postgresql.enabled: var.postgresql_enabled
 EOF
   ]
-
+  
+   
   depends_on = [
     helm_release.redis,
     helm_release.postgres,
@@ -46,7 +76,7 @@ resource "kubernetes_ingress_v1" "gitea" {
   spec {
     ingress_class_name = "nginx"
     rule {
-      host = var.ingress_hosts[0]
+      host = "gitea.local"
       http {
         path {
           path = "/"
@@ -63,7 +93,7 @@ resource "kubernetes_ingress_v1" "gitea" {
       }
     tls {
       secret_name = "gitea-tls"
-      hosts = var.ingress_hosts
+      hosts = [ "gitea.local", "gitea" ]
     }
   }
 }

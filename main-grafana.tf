@@ -7,8 +7,12 @@ resource "helm_release" "grafana" {
 
   values = [
     <<EOF
-    adminPassword: var.grafana_admin_password
-  EOF
+adminPassword: var.grafana_admin_password
+grafana:
+  persistence:
+    enabled: true
+    size: 500Mi
+EOF
   ]
 
   depends_on = [

@@ -1,17 +1,18 @@
 # Kubernetes configuration
 kubeconfig = "/home/bmath/k8s/x2/kubeconfig.yaml"
 
-# Grafana Variables
+# Grafanacrt"'' Variables
 grafana_namespace       = "grafana"
 grafana_admin_password  = "securepassword"
 grafana_host            = "grafana.local"
 grafana_tls_secret_name = "grafana-tls"
 ingress_class           = "nginx"
-cluster_issuer          = "letsencrypt-prod"
+cluster_issuer          = "ca-issuer"
 
 # Harbor Variables
 harbor_namespace       = "harbor"
-harbor_expose_type     = "ingress"
+harbor_cluster_issuer  = "ca-issuer"
+
 harbor_ingress_host    = "harbor.local"
 harbor_ingress_class   = "nginx"
 harbor_external_url    = "https://harbor.local"
@@ -22,11 +23,11 @@ gitea_namespace       =  "gitea"
 gitea_admin_password    = "rrrrrrrr"
 global_storage_class    = "standard"
 host_aliases            = [
-  { ip = "192.168.122.7", hostnames = ["gitea"] },
+  { ip = "192.168.122.7", hostnames = ["gitea.local"] },
   { ip = "192.168.122.9", hostnames = ["ssh.gitea.local"] }
 ]
 ssh_external_host       = "ssh.gitea.local"
-ssh_load_balancer_ip    = "192.168.123.9"
+ssh_load_balancer_ip    = "192.168.123.10"
 ingress_hosts           = ["gitea", "gitea.local", "ssh.gitea.local"]
 redis_enabled           = true
 postgresql_enabled      = true
@@ -75,13 +76,14 @@ zalando_postgres_ui_ingress_host = "postgres-ui.local"
 
 # Velero Variables
 velero_credentials_secret = "securepassword"
-velero_backup_storage_name = "yowza"
-velero_backup_storage_provider = "someone"
-velero_backup_storage_bucket = "bucket"
-velero_backup_storage_region = "alongwayaway"
-velero_snapshot_location_name = "whooptedoo"
-velero_snapshot_location_provider = "me"
-velero_snapshot_location_region = "here"
+velero_backup_storage_name = "backups"
+velero_backup_storage_provider = "aws"
+velero_backup_storage_bucket = "velero-backups"
+velero_backup_storage_region = "minio"
+velero_backup_storage_location = "minio"
+velero_snapshot_location_name = "local"
+velero_snapshot_location_provider = "aws"
+velero_snapshot_location_region = "minio,s3ForcePathStyle=\"true\""
 velero_init_container_name = ""
 velero_init_container_image = ""
 velero_init_container_mount_path = ""

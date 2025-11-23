@@ -33,7 +33,7 @@ metadata:
   namespace: cert-manager
 spec:
   isCA: true
-  commonName: ca
+  commonName: Aviary Local CA
   secretName: ca-secret
   privateKey:
     algorithm: ECDSA

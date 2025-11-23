@@ -24,6 +24,11 @@ variable "velero_backup_storage_region" {
   type        = string
 }
 
+variable "velero_backup_storage_location" {
+  description = "The location for the backup storage location for Velero."
+  type        = string
+}
+
 variable "velero_snapshot_location_name" {
   description = "The name of the volume snapshot location for Velero."
   type        = string
