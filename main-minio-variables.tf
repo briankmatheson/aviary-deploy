@@ -28,17 +28,6 @@ variable "minio_cluster_issuer" {
   type        = string
 }
 
-# MinIO Root User
-variable "minio_root_user" {
-  description = "Root user for MinIO"
-  type        = string
-}
-
-# MinIO Root Password
-variable "minio_root_password" {
-  description = "Root password for MinIO"
-  type        = string
-}
 variable "minio_velero_access" {
   description = "username"
   type        = string

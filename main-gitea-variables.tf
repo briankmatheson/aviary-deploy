@@ -33,12 +33,6 @@ variable "ssh_external_host" {
   type        = string
 }
 
-# SSH Load Balancer IP
-variable "ssh_load_balancer_ip" {
-  description = "Load balancer IP for SSH"
-  type        = string
-}
-
 # Ingress Hosts
 variable "ingress_hosts" {
   description = "Ingress hostnames for Gitea"

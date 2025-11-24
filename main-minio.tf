@@ -15,12 +15,12 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: storage-configuration
-  namespace: ${var.minio_namespace}
+  namespace: minio
 stringData:
   config.env: |-
-    export MINIO_ROOT_USER="${var.minio_root_user}"
-    export MINIO_ROOT_PASSWORD="${var.minio_root_password}"
-    export MINIO_STORAGE_CLASS_STANDARD="EC:2"
+    export MINIO_ROOT_USER=storage-user
+    export MINIO_ROOT_PASSWORD=storage-password
+    export MINIO_STORAGE_CLASS_STANDARD="standard"
     export MINIO_BROWSER="on"
 type: Opaque
 EOF
@@ -32,8 +32,8 @@ resource "kubectl_manifest" "minio-keys" {
   yaml_body = <<EOF
 apiVersion: v1
 data:
-  CONSOLE_ACCESS_KEY: Y29uc29sZQ==
-  CONSOLE_SECRET_KEY: Y29uc29sZTEyMw==
+  CONSOLE_ACCESS_KEY: c3RvcmFnZS11c2VyCg==
+  CONSOLE_SECRET_KEY: c3RvcmFnZS1wYXNzd29yZAo=
 kind: Secret
 metadata:
   name: storage-user
@@ -44,88 +44,90 @@ EOF
     helm_release.minio,
   ]
 }
+
+resource "kubectl_manifest" "minio_backup_user" {
+  yaml_body = <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backup-user
+  namespace: default
+stringData:
+  CONSOLE_ACCESS_KEY: backup-user
+  CONSOLE_SECRET_KEY: backup-password
+type: Opaque
+EOF
+  depends_on = [
+    helm_release.minio,
+  ]
+}
+
 resource "kubectl_manifest" "minio" {
+
   yaml_body = <<EOF
 apiVersion: minio.min.io/v2
 kind: Tenant
 metadata:
-  annotations:
-    prometheus.io/path: /minio/v2/metrics/cluster
-    prometheus.io/port: "9000"
-    prometheus.io/scrape: "true"
-  labels:
-    app: minio
   name: minio0
   namespace: minio
 spec:
-  certConfig: {}
   configuration:
     name: storage-configuration
-  env: []
-  externalCaCertSecret: []
-  externalCertSecret: []
-  externalClientCertSecrets: []
   features:
     bucketDNS: false
-    domains: {}
   image: quay.io/minio/minio:RELEASE.2024-10-02T17-50-41Z
   imagePullSecret: {}
   mountPath: /export
   podManagementPolicy: Parallel
   pools:
-  - affinity:
-      nodeAffinity: {}
-      podAffinity: {}
-      podAntiAffinity: {}
-    containerSecurityContext:
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-        - ALL
-      runAsGroup: 1000
-      runAsNonRoot: true
-      runAsUser: 1000
-      seccompProfile:
-        type: RuntimeDefault
-    name: pool-0
-    nodeSelector: {}
-    resources: {}
-    securityContext:
-      fsGroup: 1000
-      fsGroupChangePolicy: OnRootMismatch
-      runAsGroup: 1000
-      runAsNonRoot: true
-      runAsUser: 1000
-    servers: 4
-    tolerations: []
-    topologySpreadConstraints: []
-    volumeClaimTemplate:
-      apiVersion: v1
-      kind: persistentvolumeclaims
-      metadata: {}
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
-        storageClassName: standard
-      status: {}
-    volumesPerServer: 4
-  priorityClassName: ""
+    - name: pool-0
+      servers: 4
+      volumesPerServer: 4
+      affinity:
+        nodeAffinity: {}
+        podAffinity: {}
+        podAntiAffinity: {}
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ "ALL" ]
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      volumeClaimTemplate:
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+          storageClassName: standard
   requestAutoCert: true
-  serviceAccountName: ""
-  serviceMetadata:
-    consoleServiceAnnotations: {}
-    consoleServiceLabels: {}
-    minioServiceAnnotations: {}
-    minioServiceLabels: {}
-  subPath: ""
   users:
-  - name: storage-user
+    - name: storage-user
+    - name: backup-user
+  readinessProbe:
+    httpGet:
+      path: /minio/health/ready
+      port: 9000
+  livenessProbe:
+    httpGet:
+        path: /minio/health/live
+        port: 9000
 EOF
   depends_on = [
     helm_release.minio,
+    kubectl_manifest.minio_backup_user
   ]
 }
 resource "kubernetes_ingress_v1" "minio" {
@@ -143,7 +145,23 @@ resource "kubernetes_ingress_v1" "minio" {
   spec {
     ingress_class_name = var.minio_ingress_class
     rule {
-      host = var.minio_host
+      host = "minio.local"
+      http {
+        path {
+          path = "/"
+          backend {
+            service {
+              name = "minio"
+              port {
+                number = 9443
+              }
+            }
+          }
+	}
+      }
+    }
+    rule {
+      host = "minio-console.local"
       http {
         path {
           path = "/"
@@ -155,11 +173,27 @@ resource "kubernetes_ingress_v1" "minio" {
               }
             }
           }
+	}
+     }
+    }
+    rule {
+      host = "minio"
+      http {
+        path {
+          path = "/"
+          backend {
+            service {
+	      name = "minio"
+              port {
+                number = 443
+              }
+            }
+          }
         }
       }
     }
     tls {
-      secret_name = var.minio_tls_secret_name
+      secret_name = "minio-tls"
       hosts = [ "minio.local", "minio" ]
     }
   }
@@ -168,25 +202,29 @@ resource "kubernetes_ingress_v1" "minio" {
   ]
 }
 
+resource "minio_accesskey" "backup-user" {
+  user               = "backup-user"
+  access_key         = "backup-user" # Must be 8-20 characters
+  secret_key         = "backup-password" # Must be at least 8 characters
+  secret_key_version = "v1"               # Version identifier for change detection
+  status            = "enabled"
+}
+
 resource "minio_s3_bucket" "velero-backups" {
-  bucket         = var.velero_backup_storage_bucket
+  bucket         = "velero-backups"
   acl            = "private"
   object_locking = true
 }
 
-resource "kubectl_manifest" "minio-alias" {
+resource "kubectl_manifest" "minio-velero-alias" {
   yaml_body = <<EOF
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: minio
   name: minio
-  namespace: drone
+  namespace: velero
 spec:
-  externalName: minio.minio.svc.cluster.local
-  selector:
-    app: minio
+  externalName: ingress-nginx-controller.ingress-nginx.svc.cluster.local
   sessionAffinity: None
   type: ExternalName
 EOF

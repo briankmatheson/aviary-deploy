@@ -21,3 +21,8 @@ variable "rustpad_ingress_host" {
   description = "The hostname for Rustpad ingress."
   type        = string
 }
+
+variable "rustpad_pvc_size" {
+  description = "The storage size for rustpad."
+  type        = string
+}

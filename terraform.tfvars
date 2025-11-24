@@ -27,7 +27,6 @@ host_aliases            = [
   { ip = "192.168.122.9", hostnames = ["ssh.gitea.local"] }
 ]
 ssh_external_host       = "ssh.gitea.local"
-ssh_load_balancer_ip    = "192.168.123.10"
 ingress_hosts           = ["gitea", "gitea.local", "ssh.gitea.local"]
 redis_enabled           = true
 postgresql_enabled      = true
@@ -45,10 +44,10 @@ minio_host            = "minio.local"
 minio_tls_secret_name = "minio-tls"
 minio_ingress_class   = "nginx"
 minio_cluster_issuer  = "ca-issuer"
-minio_root_user       = "minio"
-minio_root_password   = "minio123"
-minio_velero_access   = "foo"
-minio_velero_secret   = "bar"
+minio_user            = "storage-user"
+minio_password        = "storage-password"
+minio_velero_access   = "backup-user"
+minio_velero_secret   = "backup-password"
 
 # JupyterHub Variables
 jupyterhub_namespace       = "jupyterhub"
@@ -82,7 +81,7 @@ velero_credentials_secret = "securepassword"
 velero_backup_storage_name = "backups"
 velero_backup_storage_provider = "aws"
 velero_backup_storage_bucket = "velero-backups"
-velero_backup_storage_region = "minio"
+velero_backup_storage_region = "us-east-1"
 
 # Values for System
 cilium_ip_address_pool = "192.168.123.8/29"
