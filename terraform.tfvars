@@ -1,5 +1,5 @@
 # Kubernetes configuration
-kubeconfig = "/home/bmath/k8s/x2/kubeconfig.yaml"
+kubeconfig = "/home/bmath/k8s/x3/kubeconfig.yaml"
 
 # Grafanacrt"'' Variables
 grafana_namespace       = "grafana"
@@ -23,8 +23,8 @@ gitea_namespace       =  "gitea"
 gitea_admin_password    = "rrrrrrrr"
 global_storage_class    = "standard"
 host_aliases            = [
-  { ip = "192.168.122.7", hostnames = ["gitea.local"] },
-  { ip = "192.168.122.9", hostnames = ["ssh.gitea.local"] }
+  { ip = "192.168.133.10", hostnames = ["gitea.local"] },
+  { ip = "192.168.133.9",  hostnames = ["ssh.gitea.local"] }
 ]
 ssh_external_host       = "ssh.gitea.local"
 ingress_hosts           = ["gitea", "gitea.local", "ssh.gitea.local"]
@@ -84,10 +84,10 @@ velero_backup_storage_bucket = "velero-backups"
 velero_backup_storage_region = "us-east-1"
 
 # Values for System
-cilium_ip_address_pool = "192.168.123.8/29"
-nfs_server = "192.168.122.105"
+cilium_ip_address_pool = "192.168.133.8/29"
+nfs_server = "192.168.132.206"
 nfs_share = "/export/nfs"
-ingress_nginx_external_ip = "192.168.123.8"
+ingress_nginx_external_ip = "192.168.133.8"
 dashboard_ingress_host = "kubernetes-dashboard.local"
 dashboard_tls_secret_name = "kubernetes-dashboard-tls"
 

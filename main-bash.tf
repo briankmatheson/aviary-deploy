@@ -23,6 +23,7 @@ spec:
   once: false
 EOF
   depends_on = [
+    helm_release.dashboard,
     helm_release.bash,
   ]
 }

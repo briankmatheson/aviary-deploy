@@ -22,6 +22,9 @@ config:
         secretName: qdrant-tls
 EOF
   ]
+  depends_on = [
+    helm_release.dashboard,
+  ]
 }
 resource "kubernetes_ingress_v1" "qdrant" {
   wait_for_load_balancer = true

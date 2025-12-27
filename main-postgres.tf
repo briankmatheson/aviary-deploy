@@ -9,16 +9,6 @@ resource "helm_release" "postgres" {
     helm_release.dashboard,
   ]
 }
-resource "helm_release" "pgdb" {
-  name       = "postgres"
-  repository = "https://percona.github.io/percona-helm-charts/"
-  chart      = "pg-db"
-  namespace  = var.percona_postgres_namespace
-  depends_on = [
-    helm_release.dashboard,
-    helm_release.postgres
-  ]
-}
 
 /* Zalando Postgres */
 resource "helm_release" "zalando_postgres" {

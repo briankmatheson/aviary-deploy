@@ -31,7 +31,7 @@ server:
         - argo.local
         secretName: argo-tls
 EOF
-]
+  ]
   depends_on = [
     helm_release.dashboard,
   ]

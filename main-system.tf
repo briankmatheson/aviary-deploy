@@ -1,3 +1,13 @@
+resource "helm_release" "cilium" {
+  name       = "cilium"
+  repository = "https://helm.cilium.io/"
+  chart      = "cilium"
+  namespace  = "kube-system"
+  values = [
+    <<EOF
+    EOF
+  ]
+}
    
 resource "helm_release" "cert-manager" {
   name       = "cert-manager"
@@ -5,8 +15,16 @@ resource "helm_release" "cert-manager" {
   chart      = "cert-manager"
   namespace  = "cert-manager"
   create_namespace = true
-  reuse_values = true
   take_ownership = true
+  atomic           = true
+  cleanup_on_fail  = true
+  values = [<<EOF
+crds.enabled: true
+EOF
+  ]
+  depends_on = [
+    helm_release.cilium
+  ]
 }
 resource "kubectl_manifest" "ca" {
   force_new = false
@@ -64,17 +82,6 @@ EOF
   ]
 }
 
-resource "helm_release" "cilium" {
-  name       = "cilium"
-  repository = "https://helm.cilium.io/"
-  chart      = "cilium"
-  namespace  = "kube-system"
-  values = [
-    <<EOF
-    EOF
-  ]
-}
-
 resource "kubectl_manifest" "ing-ip" {
   force_new = false
   yaml_body = <<EOF
@@ -125,6 +132,17 @@ resource "kubernetes_ingress_class_v1" "nginx" {
 }
 */
 
+resource "helm_release" "helm" {
+  name = "helm-dashboard"
+  repository = "https://helm-charts.komodor.io"
+  chart = "helm-dashboard"
+  namespace = "kube-system"
+  values = [
+    <<EOF
+  EOF
+  ]
+}
+
 resource "helm_release" "dashboard" {
   name = "kubernetes-dashboard"
   repository = "https://kubernetes.github.io/dashboard/"
@@ -135,7 +153,8 @@ resource "helm_release" "dashboard" {
     kong.env.proxy_listen: "0.0.0.0:8443 http2 ssl"
     kong.env.admin_listen: "0.0.0.0:8443 http2 ssl"
     kong.env.status_listen: "0.0.0.0:8443 http2 ssl"
-    kong.enabled: true
+    kong.env.dns_order: "LAST,A,CNAME,AAAA,SRV"
+    kong.enabled: false
     enableSkipLogin: true
   EOF
   ]
