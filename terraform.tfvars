@@ -1,3 +1,8 @@
+# Cert-manager node trust DaemonSet
+# Set to false (or TF_VAR_enable_cert_manager_node_trust=false) to skip
+# pushing the internal CA into node trust stores on a given run.
+enable_cert_manager_node_trust = true
+
 # Kubernetes configuration
 kubeconfig = "/home/bmath/k8s/x3/kubeconfig.yaml"
 
