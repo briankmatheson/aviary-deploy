@@ -1,8 +1,8 @@
 resource "helm_release" "minio" {
-  name       = "minio"
-  repository = "https://operator.min.io"
-  chart      = "operator"
-  namespace  = var.minio_namespace
+  name             = "minio"
+  repository       = "https://operator.min.io"
+  chart            = "operator"
+  namespace        = var.minio_namespace
   create_namespace = true
 
   depends_on = [
@@ -132,14 +132,14 @@ EOF
 }
 resource "kubernetes_ingress_v1" "minio" {
   metadata {
-    name = "minio"
+    name      = "minio"
     namespace = var.minio_namespace
     annotations = {
-      "kubernetes.io/ingress.class" = var.minio_ingress_class
-      "cert-manager.io/cluster-issuer" =  var.minio_cluster_issuer
-      "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
+      "kubernetes.io/ingress.class"                      = var.minio_ingress_class
+      "cert-manager.io/cluster-issuer"                   = var.minio_cluster_issuer
+      "nginx.ingress.kubernetes.io/backend-protocol"     = "HTTPS"
       "nginx.ingress.kubernetes.io/client-max-body-size" = "1024g"
-      "nginx.ingress.kubernetes.io/proxy-body-size" = "1024g"
+      "nginx.ingress.kubernetes.io/proxy-body-size"      = "1024g"
     }
   }
   spec {
@@ -157,7 +157,7 @@ resource "kubernetes_ingress_v1" "minio" {
               }
             }
           }
-	}
+        }
       }
     }
     rule {
@@ -173,8 +173,8 @@ resource "kubernetes_ingress_v1" "minio" {
               }
             }
           }
-	}
-     }
+        }
+      }
     }
     rule {
       host = "minio"
@@ -183,7 +183,7 @@ resource "kubernetes_ingress_v1" "minio" {
           path = "/"
           backend {
             service {
-	      name = "minio"
+              name = "minio"
               port {
                 number = 443
               }
@@ -194,7 +194,7 @@ resource "kubernetes_ingress_v1" "minio" {
     }
     tls {
       secret_name = "minio-tls"
-      hosts = [ "minio.local", "minio" ]
+      hosts       = ["minio.local", "minio"]
     }
   }
   depends_on = [
@@ -204,10 +204,10 @@ resource "kubernetes_ingress_v1" "minio" {
 
 resource "minio_accesskey" "backup-user" {
   user               = "backup-user"
-  access_key         = "backup-user" # Must be 8-20 characters
+  access_key         = "backup-user"     # Must be 8-20 characters
   secret_key         = "backup-password" # Must be at least 8 characters
-  secret_key_version = "v1"               # Version identifier for change detection
-  status            = "enabled"
+  secret_key_version = "v1"              # Version identifier for change detection
+  status             = "enabled"
 }
 
 resource "minio_s3_bucket" "velero-backups" {

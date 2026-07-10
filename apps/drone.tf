@@ -1,27 +1,15 @@
 resource "helm_release" "drone" {
-  name       = "drone"
-  repository = "https://charts.drone.io"
-  chart      = "drone"
-  namespace  = "drone"
+  name             = "drone"
+  repository       = "https://charts.drone.io"
+  chart            = "drone"
+  namespace        = "drone"
   create_namespace = true
 
   values = [
     <<EOF
+# Ingress disabled; routed via the shared Envoy Gateway (see envoy-gateway.tf).
 ingress:
-  enabled: true
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    cert-manager.io/cluster-issuer: "ca-issuer"
-  className: nginx
-  hosts:
-    - host: "drone.local"
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: drone-tls
-      hosts:
-        - drone.local
+  enabled: false
 env:
   DRONE_SERVER_HOST: drone.local
   DRONE_SERVER_PROTO: https
@@ -46,18 +34,19 @@ metadata:
   name: gitea
   namespace: drone
 spec:
-  externalName: ingress-nginx-controller.ingress-nginx.svc.cluster.local
+  externalName: aviary-gateway.envoy-gateway-system.svc.cluster.local
   selector:
     app: gitea
   sessionAffinity: None
   type: ExternalName
 EOF
   depends_on = [
-    helm_release.drone
+    helm_release.drone,
+    kubectl_manifest.gateway_alias_svc
   ]
 }
 resource "kubectl_manifest" "drone-role" {
-    yaml_body = <<EOF
+  yaml_body = <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -112,7 +101,7 @@ EOF
 
 resource "kubernetes_service_account" "drone" {
   metadata {
-    name = "drone"
+    name      = "drone"
     namespace = "default"
   }
   depends_on = [

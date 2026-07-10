@@ -7,10 +7,10 @@
 #
 # NOTE: Most of the redundancy functionality is turned off.
 resource "helm_release" "gitea" {
-  name       = "gitea"
-  chart      = "gitea"
-  repository = "https://dl.gitea.io/charts/"
-  namespace  = "gitea"
+  name             = "gitea"
+  chart            = "gitea"
+  repository       = "https://dl.gitea.io/charts/"
+  namespace        = "gitea"
   create_namespace = true
   /*
   values = [ <<EOF
@@ -53,50 +53,14 @@ EOF
     postgresql.enabled: ${var.postgresql_enabled}
 EOF
   ]
-  
-   
+
+
   depends_on = [
-    helm_release.redis,
     helm_release.postgres,
   ]
 }
 
-resource "kubernetes_ingress_v1" "gitea" {
-  metadata {
-    name = "gitea"
-    namespace = "gitea"
-    annotations = {
-      "kubernetes.io/ingress.class" = "nginx",
-      "cert-manager.io/cluster-issuer" =  "ca-issuer"
-    }
-  }
-  depends_on = [
-    helm_release.gitea
-  ]
-  spec {
-    ingress_class_name = "nginx"
-    rule {
-      host = "gitea.local"
-      http {
-        path {
-          path = "/"
-          backend {
-            service {
-	              name = "gitea-http"
-                port {
-		             number = 3000
-	             }   
-	           }   
-           }
-          }
-       }
-      }
-    tls {
-      secret_name = "gitea-tls"
-      hosts = [ "gitea.local", "gitea" ]
-    }
-  }
-}
+# Exposure handled by the shared Envoy Gateway (gitea.local -> gitea-http:3000).
 resource "kubectl_manifest" "drone" {
   yaml_body = <<EOF
 apiVersion: v1
@@ -105,15 +69,16 @@ metadata:
   labels:
     app: drone
   name: drone
-  namespace: 
+  namespace:
 spec:
-  externalName: ingress-nginx-controller.ingress-nginx.svc.cluster.local
+  externalName: aviary-gateway.envoy-gateway-system.svc.cluster.local
   selector:
     app: drone
   sessionAffinity: None
   type: ExternalName
 EOF
   depends_on = [
-    kubernetes_ingress_v1.gitea,
+    helm_release.gitea,
+    kubectl_manifest.gateway_alias_svc,
   ]
 }

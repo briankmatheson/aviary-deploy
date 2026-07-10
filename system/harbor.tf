@@ -1,37 +1,19 @@
 resource "helm_release" "harbor" {
-  name       = "harbor"
-  repository = "https://helm.goharbor.io"
-  chart      = "harbor"
-  namespace  = var.harbor_namespace
+  name             = "harbor"
+  repository       = "https://helm.goharbor.io"
+  chart            = "harbor"
+  namespace        = var.harbor_namespace
   create_namespace = true
-  
-  values = [ <<EOF
+
+  values = [<<EOF
+# TLS terminates at the Envoy Gateway; expose the core as a plain ClusterIP
+# Service and route to it via HTTPRoute (see envoy-gateway.tf).
 expose:
+  type: clusterIP
   tls:
-    auto:
-      commonName: harbor.local
-  type: ingress
-  ingress:
-    hosts:
-      core: harbor.local
-    className: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: ca-issuer
-      ingress.kubernetes.io/ssl-redirect: "true"
-      ingress.kubernetes.io/proxy-body-size: "0"
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/proxy-body-size: "0"
-  route:
-    hosts:
-      - harbor.local
-      - harbor
-      - core.harbor.local
+    enabled: false
 externalURL: https://harbor.local
 ipFamily.ipv6.enabled: false
 EOF
-  ]
-
-  depends_on = [
-    helm_release.dashboard,
   ]
 }

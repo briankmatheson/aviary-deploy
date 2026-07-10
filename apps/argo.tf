@@ -1,8 +1,8 @@
 resource "helm_release" "argo" {
-  name       = "argo"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argo-cd"
-  namespace  = "argo"
+  name             = "argo"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  namespace        = "argo"
   create_namespace = true
 
 
@@ -13,27 +13,17 @@ global:
   domain: argo.local
 configs:
   params:
-    server.insecure: false
+    # TLS terminates at the Envoy Gateway, so the argo-server backend is plain HTTP.
+    server.insecure: true
   repositories:
     aviary-frontend:
       url: https://gitea/share/aviary-frontend
       type: git
 server:
+  # Ingress disabled; routed via the shared Envoy Gateway (see envoy-gateway.tf).
   ingress:
-    enabled: true
-    ingressClassName: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: ca-issuer
-      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    extraTls:
-      - hosts:
-        - argo.local
-        secretName: argo-tls
+    enabled: false
 EOF
-  ]
-  depends_on = [
-    helm_release.dashboard,
   ]
 }
 
@@ -65,7 +55,7 @@ EOF
 }
 
 resource "kubectl_manifest" "aviary-frontend" {
-  yaml_body = <<EOF
+  yaml_body  = <<EOF
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

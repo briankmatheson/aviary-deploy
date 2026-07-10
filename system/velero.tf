@@ -1,8 +1,8 @@
 resource "helm_release" "velero" {
-  name       = "velero"
-  repository = "https://vmware-tanzu.github.io/helm-charts"
-  chart      = "velero"
-  namespace  = "velero"
+  name             = "velero"
+  repository       = "https://vmware-tanzu.github.io/helm-charts"
+  chart            = "velero"
+  namespace        = "velero"
   create_namespace = true
   values = [
     <<EOF
@@ -24,39 +24,5 @@ resource "helm_release" "velero" {
     schedules.hourly.template.ttl: 72h0m0s
 EOF
   ]
-  depends_on = [
-    helm_release.dashboard,
-  ]
 }
-resource "kubernetes_ingress_v1" "velero" {
-  metadata {
-    name = "velero"
-    namespace = "velero"
-  }
-  spec {
-    ingress_class_name = "nginx"
-    rule {
-      host = "velero.local"
-      http {
-        path {
-          path = "/"
-          backend {
-	    service {
-	      name = "velero"
-              port {
-		number = 8085
-	      }
-	    }
-          }
-        }
-      }
-    }
-    tls {
-      secret_name = "velero-tls"
-      hosts = [ "velero.local" ]
-    }
-  }
-  depends_on = [
-    helm_release.velero
-  ]
-}
+# Exposure handled by the shared Envoy Gateway (velero.local -> velero:8085).

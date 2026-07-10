@@ -8,7 +8,7 @@ provider "kubernetes" {
 }
 provider "kubectl" {
   load_config_file = true
-  config_path = var.kubeconfig
+  config_path      = var.kubeconfig
 }
 
 provider "minio" {

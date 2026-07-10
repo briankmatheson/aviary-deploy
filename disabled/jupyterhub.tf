@@ -1,11 +1,11 @@
 resource "helm_release" "jupyterhub" {
-  name       = "jupyterhub"
-  chart      = "jupyterhub"
-  repository = "https://hub.jupyter.org/helm-chart/"
-  namespace  = var.jupyterhub_namespace
+  name             = "jupyterhub"
+  chart            = "jupyterhub"
+  repository       = "https://hub.jupyter.org/helm-chart/"
+  namespace        = var.jupyterhub_namespace
   create_namespace = true
 
-  values = [ <<EOF
+  values = [<<EOF
 hub:
   revisionHistoryLimit:
   config:
@@ -21,7 +21,7 @@ hub:
       authenticator_class: dummy
 EOF
   ]
-  
+
   depends_on = [
     helm_release.dashboard,
   ]
@@ -32,7 +32,7 @@ resource "kubernetes_ingress_v1" "jupyterhub" {
     name      = "jupyterhub"
     namespace = var.jupyterhub_namespace
     annotations = {
-      "kubernetes.io/ingress.class"     = var.jupyterhub_ingress_class
+      "kubernetes.io/ingress.class"    = var.jupyterhub_ingress_class
       "cert-manager.io/cluster-issuer" = var.jupyterhub_cluster_issuer
     }
   }

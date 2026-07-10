@@ -38,9 +38,6 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
 EOF
-  depends_on = [
-    helm_release.dashboard
-  ]
 }
 
 resource "kubectl_manifest" "aviary-frontend-svc" {
@@ -66,42 +63,6 @@ spec:
   sessionAffinity: None
   type: ClusterIP
 EOF
-  depends_on = [
-    helm_release.dashboard
-  ]
 }
 
-resource "kubectl_manifest" "aviary-frontend-ing" {
-  yaml_body = <<EOF
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  labels:
-    app: aviary-frontend
-  annotations:
-    cert-manager.io/cluster-issuer: ca-issuer
-    kubernetes.io/ingress.class: nginx
-  name: aviary-frontend
-  namespace: kube-system
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: aviary.local
-    http:
-      paths:
-      - backend:
-          service:
-            name: aviary
-            port:
-              number: 8086
-        path: /
-        pathType: ImplementationSpecific
-  tls:
-  - hosts:
-    - aviary.local
-    secretName: aviary-tls
-EOF
-  depends_on = [
-    helm_release.drone
-  ]
-}
+# Exposure handled by the shared Envoy Gateway (aviary.local -> aviary:8086).
