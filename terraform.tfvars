@@ -6,6 +6,11 @@ enable_cert_manager_node_trust = true
 # Kubernetes configuration
 kubeconfig = "/home/bmath/k8s/home/1/kubeconfig.yaml"
 
+    NMPKXWCg7g2R
+    uBytLY8g8NSq
+    
+    
+
 # Grafanacrt"'' Variables
 grafana_namespace       = "grafana"
 grafana_admin_password  = "px8QCt6xAkVk"
@@ -24,12 +29,12 @@ harbor_external_url  = "https://harbor.local"
 harbor_ipv6_enabled  = false
 
 # Gitea Variables
-gitea_namespace      = "gitea"
-gitea_admin_password = "an7Cu3yhv7Nn"
-global_storage_class = "standard"
-host_aliases = [
+gitea_namespace         =  "gitea"
+gitea_admin_password    = "an7Cu3yhv7Nn"
+global_storage_class    = "standard"
+host_aliases            = [
   { ip = "192.168.1.5", hostnames = ["gitea.local"] },
-  { ip = "192.168.1.10", hostnames = ["ssh.gitea.local"] }
+  { ip = "192.168.1.4",  hostnames = ["ssh.gitea.local"] }
 ]
 ssh_external_host    = "ssh.gitea.local"
 ssh_load_balancer_ip = "192.168.1.10"
@@ -91,8 +96,11 @@ velero_backup_storage_region   = "us-east-1"
 
 # Values for System
 cilium_ip_address_pool = "192.168.1.8/29"
-nfs_server             = "192.168.1.25"
-nfs_share              = "/export/nfs"
+nfs_server = "192.168.1.25"
+nfs_share = "/export/nfs"
+ingress_nginx_external_ip = "192.168.1.8"
+#dashboard_ingress_host = "kubernetes-dashboard.local"
+#dashboard_tls_secret_name = "kubernetes-dashboard-tls"
 
 # Values for Redis
 redis_namespace    = "redis"
