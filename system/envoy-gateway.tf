@@ -153,19 +153,15 @@ resource "kubectl_manifest" "httproute" {
   EOF
 
   # Requires the Gateway (CRDs + listener) and the backend namespace to exist.
+  # Only same-stack releases are ordered here; apps in the apps/ and data/
+  # stacks (argo, drone, rustpad, bash, gitea, zalando_postgres, qdrant) are
+  # applied separately, so their namespaces must already exist when this runs.
   depends_on = [
     kubectl_manifest.gateway,
-    helm_release.argo,
-    helm_release.drone,
-    helm_release.rustpad,
     helm_release.grafana,
     helm_release.harbor,
     helm_release.velero,
-    helm_release.gitea,
-    helm_release.zalando_postgres,
-    helm_release.qdrant,
     helm_release.headlamp,
-    helm_release.bash,
   ]
 }
 

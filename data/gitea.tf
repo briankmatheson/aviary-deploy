@@ -69,7 +69,7 @@ metadata:
   labels:
     app: drone
   name: drone
-  namespace:
+  namespace: default
 spec:
   externalName: aviary-gateway.envoy-gateway-system.svc.cluster.local
   selector:
@@ -77,8 +77,9 @@ spec:
   sessionAffinity: None
   type: ExternalName
 EOF
+  # aviary-gateway (kubectl_manifest.gateway_alias_svc) lives in the system/
+  # stack; apply system/ so the ExternalName target resolves.
   depends_on = [
     helm_release.gitea,
-    kubectl_manifest.gateway_alias_svc,
   ]
 }

@@ -63,6 +63,31 @@ make plan-with V=main-rustpad.tfvars  # plan with an alternate var-file
 make apply-with V=main-rustpad.tfvars # apply with an alternate var-file
 ```
 
+Sub-stacks
+==========
+
+Each role folder (`apps/`, `system/`, `data/`) is an independent OpenTofu stack
+with its own state. The shared root files (`providers.tf`, `versions.tf`,
+`variables.tf`, `locals.tf`, `terraform.tfvars`) are symlinked into each folder,
+and each folder has its own `Makefile` mirroring the root targets.
+
+Drive a sub-stack from the root Makefile (defaults to `apply-auto`; pick another
+target with `CMD=`):
+
+```
+make data                 # apply the data/ stack
+make apps CMD=plan        # plan the apps/ stack
+make system CMD=destroy   # destroy the system/ stack
+```
+
+Or run `make` directly inside a folder (e.g. `cd system && make plan`).
+
+Apply order matters: **`data` -> `apps` -> `system`**. The `system` stack's
+`HTTPRoute`s are created in the app namespaces, and the gitea/drone
+`ExternalName` aliases point at the shared gateway, so the backing apps and the
+gateway should exist first. Because the stacks have separate state, this
+ordering is not enforced by OpenTofu -- it is up to you.
+
 /etc/hosts
 ==========
 

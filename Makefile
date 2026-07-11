@@ -2,7 +2,7 @@ TF       := tofu
 TFVARS   := terraform.tfvars
 PLAN     := tfplan
 
-.PHONY: init validate fmt plan apply destroy refresh output console clean
+.PHONY: init validate fmt plan apply destroy refresh output console clean apps system data
 
 init:
 	$(TF) init
@@ -47,3 +47,15 @@ plan-with:
 
 apply-with:
 	$(TF) apply -var-file=$(V) -auto-approve
+
+# Drive an independent sub-stack (own state). Defaults to apply-auto; pick a
+# sub-target with CMD=, e.g. make system CMD=plan. Recommended apply order is
+# data -> apps -> system, since system HTTPRoutes land in the app namespaces.
+apps:
+	$(MAKE) -C apps $(if $(CMD),$(CMD),apply-auto)
+
+system:
+	$(MAKE) -C system $(if $(CMD),$(CMD),apply-auto)
+
+data:
+	$(MAKE) -C data $(if $(CMD),$(CMD),apply-auto)

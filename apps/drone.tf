@@ -20,9 +20,7 @@ env:
   DRONE_USER_CREATE: username:gitea_admin,machine:false,admin:true
 EOF
   ]
-  depends_on = [
-    helm_release.gitea,
-  ]
+  # gitea lives in the data/ stack; apply data/ before apps/ so it exists.
 }
 resource "kubectl_manifest" "gitea" {
   yaml_body = <<EOF
@@ -40,9 +38,10 @@ spec:
   sessionAffinity: None
   type: ExternalName
 EOF
+  # aviary-gateway (kubectl_manifest.gateway_alias_svc) lives in the system/
+  # stack; apply system/ so the ExternalName target resolves.
   depends_on = [
     helm_release.drone,
-    kubectl_manifest.gateway_alias_svc
   ]
 }
 resource "kubectl_manifest" "drone-role" {
