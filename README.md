@@ -34,6 +34,45 @@ Requires the `helm`, `kubernetes`, `gavinbunney/kubectl`, and `aminueza/minio` p
 
 Ingress uses the **Kubernetes Gateway API**. `system/envoy-gateway.tf` installs Envoy Gateway, defines a single shared `aviary` Gateway, and generates one HTTPS listener + one `HTTPRoute` per app from the `local.vhosts` table. TLS terminates at the Gateway: each listener references an `<app>-tls` secret provisioned by cert-manager, so **cert-manager must run with Gateway API support enabled** (`config.enableGatewayAPI=true`, i.e. `--feature-gates=ExperimentalGatewayAPISupport=true`). To expose a new app, add an entry to `local.vhosts` rather than writing an `Ingress`.
 
+Quickstart
+==========
+
+Prerequisites:
+
+- [OpenTofu](https://opentofu.org/) (`tofu`) or Terraform installed
+- A reachable Kubernetes cluster and a kubeconfig for it
+- `kubectl` and `helm` on your PATH (handy for troubleshooting)
+
+Apply the configuration:
+
+```sh
+# 1. Clone and enter the repo
+git clone <repo-url> aviary-deploy
+cd aviary-deploy
+
+# 2. Configure your deployment.
+#    Edit terraform.tfvars — at minimum set `kubeconfig` to the path of your
+#    cluster's kubeconfig, along with the IPs, hostnames, and passwords you want.
+$EDITOR terraform.tfvars
+
+# 3. Download providers and initialize the working directory
+tofu init
+
+# 4. Preview the changes (optional but recommended)
+tofu plan
+
+# 5. Apply
+tofu apply
+```
+
+Gitea/Drone is a two-phase install: run `tofu apply` once, set up the Gitea
+OAuth app for Drone, then run `tofu apply` again with the app keys.
+
+Finally, point the ingress hostnames at your cluster by adding entries to
+`/etc/hosts` (see the `Installing` section below for a sample).
+
+To tear the environment down: `tofu destroy` (read the Notes below first).
+
 Installing
 ==========
 
