@@ -9,7 +9,8 @@ resource "helm_release" "drone" {
   # The Gitea OAuth2 client comes from terraform.tfvars (two-phase install,
   # see README). gitea lives in the data/ stack; apply data/ before apps/.
   values = [yamlencode({
-    ingress = { enabled = false }
+    ingress          = { enabled = false }
+    persistentVolume = { storageClass = var.global_storage_class }
     env = {
       DRONE_SERVER_HOST         = "drone.local"
       DRONE_SERVER_PROTO        = "https"
