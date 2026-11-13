@@ -9,10 +9,10 @@ kubeconfig = "/home/you/.kube/config"
 # base_domain = "aviary.local"
 
 # Landing page image; override to pull from an internal registry.
-# aviary_frontend_image = "briankmatheson/aviary-frontend:1.0.1"
+# aviary_frontend_image = "briankmatheson/aviary-frontend:1.0.2"
 
 # cert-manager ClusterIssuer the shared Gateway asks for its certificates.
-# cluster_issuer = "ca-issuer"
+# cluster_issuer = "ca-issuer"   # e.g. internal-acme for the platform CA (simple: workload-platform)
 
 # StorageClass for the PVCs (gitea, grafana, rustpad).
 # global_storage_class = "standard"

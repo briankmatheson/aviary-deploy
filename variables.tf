@@ -36,7 +36,7 @@ variable "global_storage_class" {
 variable "aviary_frontend_image" {
   description = "Landing page image (github.com/briankmatheson/aviary-frontend; `make push REGISTRY=...` to use your own registry)."
   type        = string
-  default     = "briankmatheson/aviary-frontend:1.0.1"
+  default     = "briankmatheson/aviary-frontend:1.0.2"
 }
 
 # --- Gitea ---
