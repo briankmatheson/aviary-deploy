@@ -19,19 +19,19 @@ locals {
   # host -> backend Service routing table. One HTTPS listener and one HTTPRoute
   # are generated per entry. `namespace`/`service`/`port` identify the backend.
   vhosts = {
-    argo        = { host = "argo.local", namespace = "argo", service = "argo-argocd-server", port = 80, tls = "argo-tls" }
-    aviary      = { host = "aviary.local", namespace = "kube-system", service = "aviary-frontend", port = 8086, tls = "aviary-tls" }
-    bash        = { host = "bash.local", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls" }
-    drone       = { host = "drone.local", namespace = "drone", service = "drone", port = 8080, tls = "drone-tls" }
-    rustpad     = { host = "rustpad.local", namespace = "rustpad", service = "rustpad", port = 3030, tls = "rustpad-tls" }
-    grafana     = { host = "grafana.local", namespace = "grafana", service = "grafana", port = 80, tls = "grafana-tls" }
-    harbor      = { host = "harbor.local", namespace = "harbor", service = "harbor", port = 80, tls = "harbor-tls" }
-    velero      = { host = "velero.local", namespace = "velero", service = "velero", port = 8085, tls = "velero-tls" }
-    gitea       = { host = "gitea.local", namespace = "gitea", service = "gitea-http", port = 3000, tls = "gitea-tls" }
-    postgres-ui = { host = "postgres-ui.local", namespace = "zalando-postgres", service = "postgres-ui-postgres-operator-ui", port = 80, tls = "postgres-ui-tls" }
+    argo        = { host = "argo.${var.base_domain}", namespace = "argo", service = "argo-argocd-server", port = 80, tls = "argo-tls" }
+    aviary      = { host = var.base_domain, namespace = "aviary", service = "aviary-frontend", port = 8086, tls = "aviary-tls" }
+    bash        = { host = "bash.${var.base_domain}", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls" }
+    drone       = { host = "drone.${var.base_domain}", namespace = "drone", service = "drone", port = 8080, tls = "drone-tls" }
+    rustpad     = { host = "rustpad.${var.base_domain}", namespace = "rustpad", service = "rustpad", port = 3030, tls = "rustpad-tls" }
+    grafana     = { host = "grafana.${var.base_domain}", namespace = "grafana", service = "grafana", port = 80, tls = "grafana-tls" }
+    harbor      = { host = "harbor.${var.base_domain}", namespace = "harbor", service = "harbor", port = 80, tls = "harbor-tls" }
+    velero      = { host = "velero.${var.base_domain}", namespace = "velero", service = "velero", port = 8085, tls = "velero-tls" }
+    gitea       = { host = "gitea.${var.base_domain}", namespace = "gitea", service = "gitea-http", port = 3000, tls = "gitea-tls" }
+    postgres-ui = { host = "postgres-ui.${var.base_domain}", namespace = "zalando-postgres", service = "postgres-ui-postgres-operator-ui", port = 80, tls = "postgres-ui-tls" }
     # qdrant lives in disabled/; its route would fail without the namespace:
-    # qdrant    = { host = "qdrant.local", namespace = "qdrant", service = "qdrant", port = 6333, tls = "qdrant-tls" }
-    headlamp = { host = "headlamp.local", namespace = "headlamp", service = "headlamp", port = 80, tls = "headlamp-tls" }
+    # qdrant    = { host = "qdrant.${var.base_domain}", namespace = "qdrant", service = "qdrant", port = 6333, tls = "qdrant-tls" }
+    headlamp = { host = "headlamp.${var.base_domain}", namespace = "headlamp", service = "headlamp", port = 80, tls = "headlamp-tls" }
   }
 
   # Per-host HTTPS listeners, rendered with explicit absolute indentation so the

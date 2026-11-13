@@ -15,4 +15,4 @@ resource "helm_release" "grafana" {
   })]
 }
 
-# Exposure handled by the shared Envoy Gateway (grafana.local -> grafana:80).
+# Exposure handled by the shared Envoy Gateway (grafana.<base_domain> -> grafana:80).

@@ -47,4 +47,4 @@ resource "helm_release" "velero" {
     }
   })]
 }
-# Exposure handled by the shared Envoy Gateway (velero.local -> velero:8085).
+# Exposure handled by the shared Envoy Gateway (velero.<base_domain> -> velero:8085).

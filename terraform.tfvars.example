@@ -4,6 +4,13 @@
 
 kubeconfig = "/home/you/.kube/config"
 
+# Apps live at <app>.<base_domain>, the landing page at <base_domain>. Point a
+# wildcard DNS record (or /etc/hosts lines) at the Gateway's LoadBalancer IP.
+# base_domain = "aviary.local"
+
+# Landing page image; override to pull from an internal registry.
+# aviary_frontend_image = "briankmatheson/aviary-frontend:1.0.0"
+
 # cert-manager ClusterIssuer the shared Gateway asks for its certificates.
 # cluster_issuer = "ca-issuer"
 
@@ -14,7 +21,7 @@ kubeconfig = "/home/you/.kube/config"
 gitea_admin_password = "change-me"
 # From your LoadBalancer pool (MetalLB / Cilium LB IPAM): Gitea ssh.
 ssh_load_balancer_ip = "192.168.133.9"
-# ssh_external_host  = "ssh.gitea.local"
+# ssh_external_host  = ""   # default ssh.gitea.<base_domain>
 # postgresql_enabled = true
 
 # --- Drone --- (fill in after creating the OAuth2 app in Gitea, then re-apply)
@@ -28,7 +35,7 @@ grafana_admin_password = "change-me"
 
 # --- Harbor ---
 # harbor_namespace    = "harbor"
-# harbor_external_url = "https://harbor.local"
+# harbor_external_url = ""   # default https://harbor.<base_domain>
 # harbor_ipv6_enabled = false
 
 # --- Postgres ---

@@ -6,7 +6,7 @@
 # * a single bundled Postgres (HA/redundancy intentionally off)
 #
 # HTTP exposure is NOT handled here: the shared Envoy Gateway terminates TLS and
-# routes gitea.local -> gitea-http:3000 (system/envoy-gateway.tf), just like
+# routes gitea.<base_domain> -> gitea-http:3000 (system/envoy-gateway.tf), just like
 # harbor. So the chart's own ingress stays disabled and the default ClusterIP
 # http service is used as-is. SSH can't ride the HTTP gateway, so it gets its
 # own LoadBalancer IP.
@@ -30,8 +30,8 @@ resource "helm_release" "gitea" {
       }
       config = {
         server = {
-          ROOT_URL   = "https://gitea.local/"
-          SSH_DOMAIN = var.ssh_external_host
+          ROOT_URL   = "https://gitea.${var.base_domain}/"
+          SSH_DOMAIN = local.ssh_external_host
         }
       }
     }
@@ -44,6 +44,11 @@ resource "helm_release" "gitea" {
     }
     ingress = {
       enabled = false
+    }
+    # RWO volume: a RollingUpdate deadlocks (the new pod cannot attach the
+    # PVC the old one still holds).
+    strategy = {
+      type = "Recreate"
     }
     # Bundled single-node Postgres and Valkey; the HA/cluster variants the
     # chart defaults to need more nodes than a small cluster has.
@@ -66,7 +71,7 @@ resource "helm_release" "gitea" {
   ]
 }
 
-# Exposure handled by the shared Envoy Gateway (gitea.local -> gitea-http:3000).
+# Exposure handled by the shared Envoy Gateway (gitea.<base_domain> -> gitea-http:3000).
 resource "kubectl_manifest" "drone" {
   yaml_body = <<EOF
 apiVersion: v1

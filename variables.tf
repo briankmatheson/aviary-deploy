@@ -15,10 +15,28 @@ variable "cluster_issuer" {
   default     = "ca-issuer"
 }
 
+variable "base_domain" {
+  description = <<-EOT
+    DNS domain the apps hang off: each app is served at <app>.<base_domain>
+    and the landing page at <base_domain> itself. Point a wildcard (or
+    /etc/hosts entries) at the Gateway's LoadBalancer IP.
+  EOT
+  type        = string
+  default     = "aviary.<base_domain>"
+}
+
 variable "global_storage_class" {
   description = "StorageClass for persistent volumes (gitea, grafana, rustpad)."
   type        = string
   default     = "standard"
+}
+
+# --- Aviary frontend ---
+
+variable "aviary_frontend_image" {
+  description = "Landing page image (github.com/briankmatheson/aviary-frontend; `make push REGISTRY=...` to use your own registry)."
+  type        = string
+  default     = "briankmatheson/aviary-frontend:1.0.0"
 }
 
 # --- Gitea ---
@@ -30,9 +48,9 @@ variable "gitea_admin_password" {
 }
 
 variable "ssh_external_host" {
-  description = "Hostname Gitea advertises for ssh clone URLs."
+  description = "Hostname Gitea advertises for ssh clone URLs. Empty: ssh.gitea.<base_domain>."
   type        = string
-  default     = "ssh.gitea.local"
+  default     = ""
 }
 
 variable "ssh_load_balancer_ip" {
@@ -49,7 +67,7 @@ variable "postgresql_enabled" {
 # --- Drone ---
 # Drone authenticates against Gitea with an OAuth2 application. Create it in
 # Gitea after the first apply (Settings -> Applications, redirect URI
-# https://drone.local/login), then set these and apply again.
+# https://drone.<base_domain>/login), then set these and apply again.
 
 variable "drone_gitea_client_id" {
   description = "Client id of the Gitea OAuth2 application for Drone."
@@ -93,9 +111,9 @@ variable "harbor_namespace" {
 }
 
 variable "harbor_external_url" {
-  description = "URL clients use to reach Harbor (what the Gateway serves)."
+  description = "URL clients use to reach Harbor. Empty: https://harbor.<base_domain>."
   type        = string
-  default     = "https://harbor.local"
+  default     = ""
 }
 
 variable "harbor_ipv6_enabled" {
@@ -162,4 +180,11 @@ variable "velero_backup_storage_region" {
   description = "Region for the BackupStorageLocation."
   type        = string
   default     = "us-east-1"
+}
+
+# --- Derived ---
+
+locals {
+  ssh_external_host   = var.ssh_external_host != "" ? var.ssh_external_host : "ssh.gitea.${var.base_domain}"
+  harbor_external_url = var.harbor_external_url != "" ? var.harbor_external_url : "https://harbor.${var.base_domain}"
 }

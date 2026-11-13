@@ -25,4 +25,4 @@ resource "helm_release" "postgres-ui" {
   ]
 }
 # Exposure handled by the shared Envoy Gateway
-# (postgres-ui.local -> postgres-ui-postgres-operator-ui:80).
+# (postgres-ui.<base_domain> -> postgres-ui-postgres-operator-ui:80).

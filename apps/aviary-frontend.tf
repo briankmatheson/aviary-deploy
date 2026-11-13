@@ -1,68 +1,161 @@
-resource "kubectl_manifest" "aviary-frontend-deployment" {
-  yaml_body = <<EOF
+# Aviary landing page (github.com/briankmatheson/aviary-frontend): a menu
+# built from the cluster's HTTPRoutes, the CA at /ca.crt, a node table.
+# Served at https://<base_domain>/ by the shared Envoy Gateway.
+
+resource "kubernetes_namespace" "aviary" {
+  metadata {
+    name = "aviary"
+  }
+}
+
+resource "kubernetes_service_account" "aviary_frontend" {
+  metadata {
+    name      = "aviary-frontend"
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
+
+# Read-only: routes/gateways for the menu, nodes for the table, the
+# ClusterIssuer to find the CA secret, metrics if metrics-server is there.
+resource "kubernetes_cluster_role" "aviary_frontend" {
+  metadata {
+    name = "aviary-frontend"
+  }
+  rule {
+    api_groups = ["gateway.networking.k8s.io"]
+    resources  = ["httproutes", "gateways"]
+    verbs      = ["get", "list", "watch"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["nodes"]
+    verbs      = ["get", "list", "watch"]
+  }
+  rule {
+    api_groups = ["cert-manager.io"]
+    resources  = ["clusterissuers"]
+    verbs      = ["get", "list"]
+  }
+  rule {
+    api_groups = ["metrics.k8s.io"]
+    resources  = ["nodes"]
+    verbs      = ["get", "list"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "aviary_frontend" {
+  metadata {
+    name = "aviary-frontend"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role.aviary_frontend.metadata[0].name
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.aviary_frontend.metadata[0].name
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
+
+# Only the issuer's CA secret, not every secret in cert-manager's namespace.
+resource "kubernetes_role" "aviary_frontend_ca" {
+  metadata {
+    name      = "aviary-frontend-ca"
+    namespace = "cert-manager"
+  }
+  rule {
+    api_groups     = [""]
+    resources      = ["secrets"]
+    resource_names = [data.kubernetes_resource.cluster_issuer.object.spec.ca.secretName]
+    verbs          = ["get"]
+  }
+}
+
+data "kubernetes_resource" "cluster_issuer" {
+  api_version = "cert-manager.io/v1"
+  kind        = "ClusterIssuer"
+  metadata {
+    name = var.cluster_issuer
+  }
+}
+
+resource "kubernetes_role_binding" "aviary_frontend_ca" {
+  metadata {
+    name      = "aviary-frontend-ca"
+    namespace = "cert-manager"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.aviary_frontend_ca.metadata[0].name
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.aviary_frontend.metadata[0].name
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
+
+# kubectl_manifest rather than kubernetes_deployment: hashicorp/kubernetes
+# 2.38 + tofu 1.13 trips "Unexpected Identity Change" on re-read of the latter.
+resource "kubectl_manifest" "aviary_frontend" {
+  yaml_body  = <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: aviary-frontend
+  namespace: ${kubernetes_namespace.aviary.metadata[0].name}
   labels:
     app: aviary-frontend
-  name: aviary-frontend
-  namespace: kube-system
 spec:
-  progressDeadlineSeconds: 600
   replicas: 1
-  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: aviary-frontend
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: aviary-frontend
     spec:
+      serviceAccountName: ${kubernetes_service_account.aviary_frontend.metadata[0].name}
       containers:
-      - image: briankmatheson/aviary-frontend
-        imagePullPolicy: Always
-        name: aviary-frontend
-        resources: {}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      terminationGracePeriodSeconds: 30
+        - name: aviary-frontend
+          image: ${var.aviary_frontend_image}
+          ports:
+            - containerPort: 8086
+          env:
+            - name: BASE_DOMAIN
+              value: ${var.base_domain}
+            - name: CLUSTER_ISSUER
+              value: ${var.cluster_issuer}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8086
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
 EOF
+  depends_on = [kubernetes_cluster_role_binding.aviary_frontend, kubernetes_role_binding.aviary_frontend_ca]
 }
 
-resource "kubectl_manifest" "aviary-frontend-svc" {
-  yaml_body = <<EOF
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: aviary-frontend
-  name: aviary-frontend
-  namespace: kube-system
-spec:
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-  - IPv4
-  ipFamilyPolicy: SingleStack
-  ports:
-  - port: 8086
-    protocol: TCP
-    targetPort: 8086
-  selector:
-    app: aviary-frontend
-  sessionAffinity: None
-  type: ClusterIP
-EOF
+resource "kubernetes_service" "aviary_frontend" {
+  metadata {
+    name      = "aviary-frontend"
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+    labels    = { app = "aviary-frontend" }
+  }
+  spec {
+    selector = { app = "aviary-frontend" }
+    port {
+      port        = 8086
+      target_port = 8086
+    }
+  }
 }
-
-# Exposure handled by the shared Envoy Gateway (aviary.local -> aviary:8086).
+# Exposure handled by the shared Envoy Gateway (<base_domain> -> aviary/aviary-frontend:8086).

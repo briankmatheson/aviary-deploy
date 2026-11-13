@@ -13,7 +13,7 @@ resource "helm_release" "harbor" {
       type = "clusterIP"
       tls  = { enabled = false }
     }
-    externalURL = var.harbor_external_url
+    externalURL = local.harbor_external_url
     ipFamily    = { ipv6 = { enabled = var.harbor_ipv6_enabled } }
     # RWO block volumes: a RollingUpdate deadlocks (the new jobservice pod on
     # another node cannot attach the PVC the old one still holds).

@@ -11,10 +11,12 @@ resource "helm_release" "drone" {
   values = [yamlencode({
     ingress          = { enabled = false }
     persistentVolume = { storageClass = var.global_storage_class }
+    # RWO volume: a RollingUpdate deadlocks on the PVC the old pod holds.
+    updateStrategy = { type = "Recreate" }
     env = {
-      DRONE_SERVER_HOST         = "drone.local"
+      DRONE_SERVER_HOST         = "drone.${var.base_domain}"
       DRONE_SERVER_PROTO        = "https"
-      DRONE_GITEA_SERVER        = "https://gitea.local"
+      DRONE_GITEA_SERVER        = "https://gitea.${var.base_domain}"
       DRONE_GITEA_CLIENT_ID     = var.drone_gitea_client_id
       DRONE_GITEA_CLIENT_SECRET = var.drone_gitea_client_secret
       DRONE_RPC_SECRET          = var.drone_rpc_secret

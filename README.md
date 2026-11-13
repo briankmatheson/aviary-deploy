@@ -11,20 +11,20 @@ Layout
 Terraform/OpenTofu configuration is grouped by role:
 
 - `apps/` — user-facing applications
-  - `argo` — Argo CD (`argo.local`)
-  - `aviary-frontend` — platform landing page (`aviary.local`)
-  - `bash` — CloudTTY in-browser shell (`bash.local`)
-  - `drone` — Drone CI (`drone.local`)
-  - `rustpad` — collaborative text editor (`rustpad.local`)
+  - `argo` — Argo CD (`argo.<base_domain>`)
+  - `aviary-frontend` — platform landing page (`aviary.<base_domain>`)
+  - `bash` — CloudTTY in-browser shell (`bash.<base_domain>`)
+  - `drone` — Drone CI (`drone.<base_domain>`)
+  - `rustpad` — collaborative text editor (`rustpad.<base_domain>`)
 - `system/` — cluster services
   - `envoy-gateway` — Gateway API ingress; the shared `aviary` Gateway that fronts every app
-  - `headlamp` — cluster UI (`headlamp.local`)
-  - `grafana` — dashboards (`grafana.local`)
-  - `harbor` — container registry (`harbor.local`)
-  - `velero` — backup/restore (`velero.local`)
+  - `headlamp` — cluster UI (`headlamp.<base_domain>`)
+  - `grafana` — dashboards (`grafana.<base_domain>`)
+  - `harbor` — container registry (`harbor.<base_domain>`)
+  - `velero` — backup/restore (`velero.<base_domain>`)
 - `data/` — stateful services
-  - `gitea` — self-hosted git (`gitea.local`, ssh via `ssh.gitea.local`)
-  - `postgres` — Percona and Zalando Postgres operators, plus the Zalando UI (`postgres-ui.local`)
+  - `gitea` — self-hosted git (`gitea.<base_domain>`, ssh via `ssh.gitea.local`)
+  - `postgres` — Percona and Zalando Postgres operators, plus the Zalando UI (`postgres-ui.<base_domain>`)
 - `disabled/` — modules that are not currently applied (`jitsi`, `jupyterhub`, `minio`, `mlflow`, `qdrant`). Each is self-contained (its own variables, and for minio its provider); move a file up into `apps/`, `system/`, or `data/` and add its host to `local.vhosts` to enable it.
 
 Root files hold shared config: `variables.tf`, `terraform.tfvars` (your copy of `terraform.tfvars.example`), `providers.tf`, `versions.tf`, the `Makefile`, and `stack.mk` (the per-stack Makefile, symlinked into each stack).
@@ -73,7 +73,7 @@ kubectl -n argo get secret argocd-initial-admin-secret -o jsonpath='{.data.passw
 ```
 
 Gitea/Drone is a two-phase install: apply once, create the OAuth2 application
-for Drone in Gitea (redirect URI `https://drone.local/login`), put its id and
+for Drone in Gitea (redirect URI `https://drone.<base_domain>/login`), put its id and
 secret in `terraform.tfvars` (`drone_gitea_client_id/_secret`) and `make apps`
 again.
 
@@ -137,11 +137,11 @@ ordering is not enforced by OpenTofu -- it is up to you.
 /etc/hosts
 ==========
 
-Point the web hostnames at the Envoy Gateway LoadBalancer IP (`kubectl -n envoy-gateway get gateway aviary`), and `ssh.gitea.local` at the Gitea SSH LoadBalancer IP (`ssh_load_balancer_ip` in `terraform.tfvars`). Both come from your cluster's LoadBalancer pool (MetalLB or Cilium LB IPAM).
+Point the web hostnames at the Envoy Gateway LoadBalancer IP (`kubectl -n envoy-gateway get gateway aviary`), and `ssh.gitea.<base_domain>` at the Gitea SSH LoadBalancer IP (`ssh_load_balancer_ip` in `terraform.tfvars`). Both come from your cluster's LoadBalancer pool (MetalLB or Cilium LB IPAM).
 
 ```
-<gateway-lb-ip>   aviary.local argo.local bash.local drone.local grafana.local harbor.local harbor headlamp.local rustpad.local velero.local postgres-ui.local gitea.local gitea
-<gitea-ssh-lb-ip> ssh.gitea.local ssh.gitea
+<gateway-lb-ip>   aviary.local argo.aviary.local bash.aviary.local drone.aviary.local grafana.aviary.local harbor.aviary.local headlamp.aviary.local rustpad.aviary.local velero.aviary.local postgres-ui.aviary.local gitea.aviary.local
+<gitea-ssh-lb-ip> ssh.gitea.aviary.local
 ```
 
 Notes

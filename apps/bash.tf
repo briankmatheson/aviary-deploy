@@ -41,4 +41,4 @@ spec:
 EOF
   depends_on = [kubectl_manifest.bash]
 }
-# Exposure handled by the shared Envoy Gateway (bash.local -> cloudshell-aviary-bash:7681).
+# Exposure handled by the shared Envoy Gateway (bash.<base_domain> -> cloudshell-aviary-bash:7681).

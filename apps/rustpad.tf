@@ -80,4 +80,4 @@ resource "kubernetes_service" "rustpad" {
     }
   }
 }
-# Exposure handled by the shared Envoy Gateway (rustpad.local -> rustpad:3030).
+# Exposure handled by the shared Envoy Gateway (rustpad.<base_domain> -> rustpad:3030).
