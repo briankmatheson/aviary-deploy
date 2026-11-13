@@ -60,7 +60,13 @@ resource "kubernetes_cluster_role_binding" "aviary_frontend" {
 }
 
 # Only the issuer's CA secret, not every secret in cert-manager's namespace.
+# An ACME issuer carries its root in spec.acme.caBundle instead; no secret.
+locals {
+  issuer_ca_secret = try(data.kubernetes_resource.cluster_issuer.object.spec.ca.secretName, null)
+}
+
 resource "kubernetes_role" "aviary_frontend_ca" {
+  count = local.issuer_ca_secret == null ? 0 : 1
   metadata {
     name      = "aviary-frontend-ca"
     namespace = "cert-manager"
@@ -68,7 +74,7 @@ resource "kubernetes_role" "aviary_frontend_ca" {
   rule {
     api_groups     = [""]
     resources      = ["secrets"]
-    resource_names = [data.kubernetes_resource.cluster_issuer.object.spec.ca.secretName]
+    resource_names = [local.issuer_ca_secret]
     verbs          = ["get"]
   }
 }
@@ -82,6 +88,7 @@ data "kubernetes_resource" "cluster_issuer" {
 }
 
 resource "kubernetes_role_binding" "aviary_frontend_ca" {
+  count = local.issuer_ca_secret == null ? 0 : 1
   metadata {
     name      = "aviary-frontend-ca"
     namespace = "cert-manager"
@@ -89,7 +96,7 @@ resource "kubernetes_role_binding" "aviary_frontend_ca" {
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "Role"
-    name      = kubernetes_role.aviary_frontend_ca.metadata[0].name
+    name      = kubernetes_role.aviary_frontend_ca[0].metadata[0].name
   }
   subject {
     kind      = "ServiceAccount"
