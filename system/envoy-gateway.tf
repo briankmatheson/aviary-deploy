@@ -19,10 +19,10 @@ locals {
   # host -> backend Service routing table. One HTTPS listener and one HTTPRoute
   # are generated per entry. `namespace`/`service`/`port` identify the backend.
   vhosts = {
-    argo        = { host = "argo.local", namespace = "argo", service = "argo-server", port = 80, tls = "argo-tls" }
+    argo        = { host = "argo.local", namespace = "argo", service = "argo-argocd-server", port = 80, tls = "argo-tls" }
     aviary      = { host = "aviary.local", namespace = "kube-system", service = "aviary-frontend", port = 8086, tls = "aviary-tls" }
     bash        = { host = "bash.local", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls" }
-    drone       = { host = "drone.local", namespace = "drone", service = "drone", port = 80, tls = "drone-tls" }
+    drone       = { host = "drone.local", namespace = "drone", service = "drone", port = 8080, tls = "drone-tls" }
     rustpad     = { host = "rustpad.local", namespace = "rustpad", service = "rustpad", port = 3030, tls = "rustpad-tls" }
     grafana     = { host = "grafana.local", namespace = "grafana", service = "grafana", port = 80, tls = "grafana-tls" }
     harbor      = { host = "harbor.local", namespace = "harbor", service = "harbor", port = 80, tls = "harbor-tls" }
