@@ -25,12 +25,13 @@ Terraform/OpenTofu configuration is grouped by role:
 - `data/` — stateful services
   - `gitea` — self-hosted git (`gitea.local`, ssh via `ssh.gitea.local`)
   - `postgres` — Percona and Zalando Postgres operators, plus the Zalando UI (`postgres-ui.local`)
-  - `qdrant` — vector database (`qdrant.local`)
-- `disabled/` — modules that are not currently applied (`jitsi`, `jupyterhub`, `minio`, `mlflow`). Move a file up into `apps/`, `system/`, or `data/` to enable it.
+- `disabled/` — modules that are not currently applied (`jitsi`, `jupyterhub`, `minio`, `mlflow`, `qdrant`). Each is self-contained (its own variables, and for minio its provider); move a file up into `apps/`, `system/`, or `data/` and add its host to `local.vhosts` to enable it.
 
-Root files hold shared config: `variables.tf`, `terraform.tfvars`, `providers.tf`, `versions.tf`, `locals.tf`, and the `Makefile`.
+Root files hold shared config: `variables.tf`, `terraform.tfvars` (your copy of `terraform.tfvars.example`), `providers.tf`, `versions.tf`, the `Makefile`, and `stack.mk` (the per-stack Makefile, symlinked into each stack).
 
-Requires the `helm`, `kubernetes`, `gavinbunney/kubectl`, and `aminueza/minio` providers (see `versions.tf`).
+Requires the `helm`, `kubernetes` and `gavinbunney/kubectl` providers (see `versions.tf`).
+
+The cluster is expected to bring its own CNI, LoadBalancer pool, cert-manager (with a ClusterIssuer, `cluster_issuer`) and a default StorageClass (`global_storage_class`); this repo no longer installs Cilium, MetalLB, ingress-nginx, cert-manager or the NFS CSI driver.
 
 Ingress uses the **Kubernetes Gateway API**. `system/envoy-gateway.tf` installs Envoy Gateway, defines a single shared `aviary` Gateway, and generates one HTTPS listener + one `HTTPRoute` per app from the `local.vhosts` table. TLS terminates at the Gateway: each listener references an `<app>-tls` secret provisioned by cert-manager, so **cert-manager must run with Gateway API support enabled** (`config.enableGatewayAPI=true`, i.e. `--feature-gates=ExperimentalGatewayAPISupport=true`). To expose a new app, add an entry to `local.vhosts` rather than writing an `Ingress`.
 
@@ -51,22 +52,24 @@ git clone <repo-url> aviary-deploy
 cd aviary-deploy
 
 # 2. Configure your deployment.
-#    Edit terraform.tfvars — at minimum set `kubeconfig` to the path of your
-#    cluster's kubeconfig, along with the IPs, hostnames, and passwords you want.
+#    At minimum set `kubeconfig`, `ssh_load_balancer_ip` and the passwords.
+cp terraform.tfvars.example terraform.tfvars
 $EDITOR terraform.tfvars
 
-# 3. Download providers and initialize the working directory
-tofu init
+# 3. Download providers and initialize every stack
+make init
 
 # 4. Preview the changes (optional but recommended)
-tofu plan
+make plan
 
-# 5. Apply
-tofu apply
+# 5. Apply (data -> apps -> system)
+make apply
 ```
 
-Gitea/Drone is a two-phase install: run `tofu apply` once, set up the Gitea
-OAuth app for Drone, then run `tofu apply` again with the app keys.
+Gitea/Drone is a two-phase install: apply once, create the OAuth2 application
+for Drone in Gitea (redirect URI `https://drone.local/login`), put its id and
+secret in `terraform.tfvars` (`drone_gitea_client_id/_secret`) and `make apps`
+again.
 
 Finally, point the ingress hostnames at your cluster by adding entries to
 `/etc/hosts` (see the `Installing` section below for a sample).
@@ -77,29 +80,26 @@ Installing
 ==========
 
 1. `git clone` this repo and `cd aviary-deploy`
-2. Point `kubeconfig` in `terraform.tfvars` at your cluster
-3. Edit `terraform.tfvars` to taste (passwords, hostnames, LB IP pool, NFS server/share)
+2. `cp terraform.tfvars.example terraform.tfvars` and point `kubeconfig` at your cluster
+3. Edit `terraform.tfvars` to taste (passwords, the Gitea ssh LB IP, storage class)
 4. `make init`
 5. `make plan` then `make apply` (or `make apply-auto` to plan and apply in one shot)
-6. Set up a Gitea OAuth app for Drone (and Argo), drop the client id/secret into the Drone config, and re-apply
+6. Set up a Gitea OAuth2 app for Drone, put the client id/secret in `terraform.tfvars`, and `make apps`
 7. Add the ingress hostnames to your `/etc/hosts` (see below)
 
-The `Makefile` wraps the common `tofu` invocations:
+The root `Makefile` runs each target in every stack, in apply order
+(`data`, `apps`, `system`; `destroy` goes the other way):
 
 ```
-make init          # tofu init
-make validate      # tofu validate
-make fmt           # tofu fmt -recursive
-make plan          # plan to ./tfplan using terraform.tfvars
-make apply         # apply the saved ./tfplan
+make init          # tofu init in each stack
+make validate      # tofu validate in each stack
+make fmt           # tofu fmt
+make plan          # plan each stack to <stack>/tfplan using terraform.tfvars
+make apply         # apply the saved plans
 make apply-auto    # plan + apply with -auto-approve
-make destroy       # tofu destroy
+make destroy       # tofu destroy, system -> apps -> data
 make refresh       # tofu refresh
 make output        # tofu output
-make console       # tofu console
-make target T=module.gitea            # plan a single target
-make plan-with V=main-rustpad.tfvars  # plan with an alternate var-file
-make apply-with V=main-rustpad.tfvars # apply with an alternate var-file
 ```
 
 Sub-stacks
@@ -107,11 +107,11 @@ Sub-stacks
 
 Each role folder (`apps/`, `system/`, `data/`) is an independent OpenTofu stack
 with its own state. The shared root files (`providers.tf`, `versions.tf`,
-`variables.tf`, `locals.tf`, `terraform.tfvars`) are symlinked into each folder,
-and each folder has its own `Makefile` mirroring the root targets.
+`variables.tf`, `terraform.tfvars`) and the stack `Makefile` (`stack.mk`) are
+symlinked into each folder.
 
-Drive a sub-stack from the root Makefile (defaults to `apply-auto`; pick another
-target with `CMD=`):
+Drive one stack from the root Makefile (defaults to `apply-auto`; pick another
+`stack.mk` target with `CMD=`):
 
 ```
 make data                 # apply the data/ stack
@@ -119,7 +119,8 @@ make apps CMD=plan        # plan the apps/ stack
 make system CMD=destroy   # destroy the system/ stack
 ```
 
-Or run `make` directly inside a folder (e.g. `cd system && make plan`).
+Or run `make` directly inside a folder (e.g. `cd system && make plan`, or
+`make target T=helm_release.grafana` to plan one resource).
 
 Apply order matters: **`data` -> `apps` -> `system`**. The `system` stack's
 `HTTPRoute`s are created in the app namespaces, and the gitea/drone
@@ -130,10 +131,10 @@ ordering is not enforced by OpenTofu -- it is up to you.
 /etc/hosts
 ==========
 
-Point the web hostnames at the Envoy Gateway LoadBalancer IP (the `aviary` Gateway's address), and `ssh.gitea.local` at the Gitea SSH LoadBalancer IP (`ssh_load_balancer_ip` in `terraform.tfvars`). The IPs come from your MetalLB/Cilium address pool (`cilium_ip_address_pool`).
+Point the web hostnames at the Envoy Gateway LoadBalancer IP (`kubectl -n envoy-gateway get gateway aviary`), and `ssh.gitea.local` at the Gitea SSH LoadBalancer IP (`ssh_load_balancer_ip` in `terraform.tfvars`). Both come from your cluster's LoadBalancer pool (MetalLB or Cilium LB IPAM).
 
 ```
-<gateway-lb-ip>   aviary.local argo.local bash.local drone.local grafana.local harbor.local harbor headlamp.local qdrant.local rustpad.local velero.local postgres-ui.local gitea.local gitea
+<gateway-lb-ip>   aviary.local argo.local bash.local drone.local grafana.local harbor.local harbor headlamp.local rustpad.local velero.local postgres-ui.local gitea.local gitea
 <gitea-ssh-lb-ip> ssh.gitea.local ssh.gitea
 ```
 

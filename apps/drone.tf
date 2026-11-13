@@ -5,22 +5,21 @@ resource "helm_release" "drone" {
   namespace        = "drone"
   create_namespace = true
 
-  values = [
-    <<EOF
-# Ingress disabled; routed via the shared Envoy Gateway (see envoy-gateway.tf).
-ingress:
-  enabled: false
-env:
-  DRONE_SERVER_HOST: drone.local
-  DRONE_SERVER_PROTO: https
-  DRONE_GITEA_SERVER: https://gitea.local
-  DRONE_GITEA_CLIENT_ID: 742cce17-0aa6-4a59-a883-975edf8bfe1e
-  DRONE_GITEA_CLIENT_SECRET: gto_zhrxwvmaxmk2yft5xlf6n5pljvig6bjk4ndl64cfgofvk6sav5ta
-  DRONE_RPC_SECRET: "0xdeadbeef"
-  DRONE_USER_CREATE: username:gitea_admin,machine:false,admin:true
-EOF
-  ]
-  # gitea lives in the data/ stack; apply data/ before apps/ so it exists.
+  # Ingress disabled; routed via the shared Envoy Gateway (see envoy-gateway.tf).
+  # The Gitea OAuth2 client comes from terraform.tfvars (two-phase install,
+  # see README). gitea lives in the data/ stack; apply data/ before apps/.
+  values = [yamlencode({
+    ingress = { enabled = false }
+    env = {
+      DRONE_SERVER_HOST         = "drone.local"
+      DRONE_SERVER_PROTO        = "https"
+      DRONE_GITEA_SERVER        = "https://gitea.local"
+      DRONE_GITEA_CLIENT_ID     = var.drone_gitea_client_id
+      DRONE_GITEA_CLIENT_SECRET = var.drone_gitea_client_secret
+      DRONE_RPC_SECRET          = var.drone_rpc_secret
+      DRONE_USER_CREATE         = "username:gitea_admin,machine:false,admin:true"
+    }
+  })]
 }
 resource "kubectl_manifest" "gitea" {
   yaml_body = <<EOF
@@ -145,7 +144,7 @@ spec:
         - name: DRONE_RPC_PROTO
           value: http
         - name: DRONE_RPC_SECRET
-          value: "0xdeadbeef"
+          value: "${var.drone_rpc_secret}"
       volumes:
       - name: run
         hostPath:

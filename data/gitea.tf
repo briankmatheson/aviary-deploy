@@ -1,7 +1,7 @@
 # gitea is a github-like git server that can be self-hosted. There are a wide
 # variety of install options which can be gleaned from the chart's values file
 # (`helm show values gitea/gitea`). We set a subset here to support:
-# * persistence via our standard nfs storage class
+# * persistence via var.global_storage_class
 # * ssh support via a separate LoadBalancer IP
 # * a single bundled Postgres (HA/redundancy intentionally off)
 #

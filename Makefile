@@ -1,61 +1,30 @@
-TF       := tofu
-TFVARS   := terraform.tfvars
-PLAN     := tfplan
+# aviary-deploy: three independent OpenTofu stacks, each with its own state.
+# Apply order is data -> apps -> system (the system stack's HTTPRoutes land in
+# the app namespaces and the apps' ExternalName aliases point at the gateway);
+# destroy runs in reverse. Per-stack targets live in stack.mk.
+#
+#   make plan           # plan every stack
+#   make apply          # apply the saved plans, in order
+#   make apply-auto     # plan + apply in one go, in order
+#   make system CMD=plan   # one stack, any stack.mk target (default apply-auto)
 
-.PHONY: init validate fmt plan apply destroy refresh output console clean apps system data
+STACKS  := data apps system
+RSTACKS := system apps data
 
-init:
-	$(TF) init
+.PHONY: all init validate fmt plan apply apply-auto destroy refresh output clean $(STACKS)
 
-validate: init
-	$(TF) validate
+all: apply-auto
 
-fmt:
-	$(TF) fmt -recursive
-
-plan:
-	$(TF) plan -var-file=$(TFVARS) -out=$(PLAN)
-
-apply:
-	$(TF) apply $(PLAN)
-
-apply-auto:
-	$(TF) apply -var-file=$(TFVARS) -auto-approve
+init validate plan apply apply-auto refresh output clean:
+	@for s in $(STACKS); do $(MAKE) --no-print-directory -C $$s $@ || exit 1; done
 
 destroy:
-	$(TF) destroy -var-file=$(TFVARS)
+	@for s in $(RSTACKS); do $(MAKE) --no-print-directory -C $$s $@ || exit 1; done
 
-refresh:
-	$(TF) refresh -var-file=$(TFVARS)
+# (tofu fmt -recursive trips over the symlinked files; list them instead)
+fmt:
+	tofu fmt *.tf $(foreach s,$(STACKS) disabled,$(wildcard $(s)/*.tf))
 
-output:
-	$(TF) output
-
-console:
-	$(TF) console -var-file=$(TFVARS)
-
-clean:
-	rm -f $(PLAN)
-
-# Target a single resource: make target T=module.gitea
-target:
-	$(TF) plan -var-file=$(TFVARS) -target=$(T) -out=$(PLAN)
-
-# Apply with an alternate var-file: make plan-with V=main-rustpad.tfvars
-plan-with:
-	$(TF) plan -var-file=$(V) -out=$(PLAN)
-
-apply-with:
-	$(TF) apply -var-file=$(V) -auto-approve
-
-# Drive an independent sub-stack (own state). Defaults to apply-auto; pick a
-# sub-target with CMD=, e.g. make system CMD=plan. Recommended apply order is
-# data -> apps -> system, since system HTTPRoutes land in the app namespaces.
-apps:
-	$(MAKE) -C apps $(if $(CMD),$(CMD),apply-auto)
-
-system:
-	$(MAKE) -C system $(if $(CMD),$(CMD),apply-auto)
-
-data:
-	$(MAKE) -C data $(if $(CMD),$(CMD),apply-auto)
+# Drive one stack: make apps CMD=plan (default: apply-auto)
+$(STACKS):
+	$(MAKE) --no-print-directory -C $@ $(if $(CMD),$(CMD),apply-auto)

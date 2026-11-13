@@ -12,9 +12,5 @@ terraform {
       source  = "gavinbunney/kubectl"
       version = "~> 1.14"
     }
-    minio = {
-      source  = "aminueza/minio"
-      version = "3.11.4"
-    }
   }
 }

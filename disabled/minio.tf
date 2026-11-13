@@ -1,3 +1,43 @@
+# DISABLED. These resources still use the old nginx Ingress and their own
+# *_ingress_class/_host/_tls variables (declared below). To enable: move the
+# file into apps/, system/ or data/, replace the Ingress with an entry in
+# local.vhosts (system/envoy-gateway.tf), and drop the variables you no
+# longer need.
+
+# The minio provider (aminueza/minio) is only needed by this file.
+terraform {
+  required_providers {
+    minio = {
+      source  = "aminueza/minio"
+      version = "3.11.4"
+    }
+  }
+}
+
+provider "minio" {
+  minio_server   = var.minio_host
+  minio_region   = "us-east-1"
+  minio_user     = var.minio_user
+  minio_password = var.minio_password
+  minio_ssl      = true
+}
+
+variable "minio_namespace" { default = "minio" }
+variable "minio_host" { default = "minio.local" }
+variable "minio_tls_secret_name" { default = "minio-tls" }
+variable "minio_ingress_class" { default = "nginx" }
+variable "minio_cluster_issuer" { default = "ca-issuer" }
+variable "minio_user" { default = "storage-user" }
+variable "minio_password" {
+  default   = "storage-password"
+  sensitive = true
+}
+variable "minio_velero_access" { default = "backup-user" }
+variable "minio_velero_secret" {
+  default   = "backup-password"
+  sensitive = true
+}
+
 resource "helm_release" "minio" {
   name             = "minio"
   repository       = "https://operator.min.io"

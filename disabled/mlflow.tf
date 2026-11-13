@@ -1,3 +1,15 @@
+# DISABLED. These resources still use the old nginx Ingress and their own
+# *_ingress_class/_host/_tls variables (declared below). To enable: move the
+# file into apps/, system/ or data/, replace the Ingress with an entry in
+# local.vhosts (system/envoy-gateway.tf), and drop the variables you no
+# longer need.
+
+variable "mlflow_namespace" { default = "mlflow" }
+variable "mlflow_host" { default = "mlflow.local" }
+variable "mlflow_tls_secret_name" { default = "mlflow-tls" }
+variable "mlflow_ingress_class" { default = "nginx" }
+variable "mlflow_cluster_issuer" { default = "ca-issuer" }
+
 resource "helm_release" "mlflow" {
   name             = "mlflow"
   chart            = "mlflow"

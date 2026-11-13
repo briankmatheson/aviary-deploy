@@ -1,367 +1,165 @@
-# =============================================================================
-# Consolidated Variables
-# =============================================================================
+# Shared variables: this file is symlinked into apps/, system/ and data/, and
+# every stack reads the same terraform.tfvars (copy terraform.tfvars.example).
+# Modules in disabled/ carry their own variable blocks.
 
 # --- Global ---
 
 variable "kubeconfig" {
   type        = string
-  description = "Path to the Kubernetes configuration file."
-}
-
-variable "ingress_class" {
-  description = "Ingress class for Kubernetes"
-  type        = string
-  default     = "nginx"
+  description = "Path to the kubeconfig for the target cluster."
 }
 
 variable "cluster_issuer" {
-  description = "Cluster issuer for cert-manager"
+  description = "cert-manager ClusterIssuer that signs the Gateway's TLS certificates."
   type        = string
-}
-
-# --- System ---
-
-# Cilium Variables
-variable "cilium_ip_address_pool" {
-  description = "A CIDR prefix for IP address pool."
-  type        = string
-}
-
-# NFS Storage Variables
-variable "nfs_server" {
-  description = "The NFS server address."
-  type        = string
-}
-
-variable "nfs_share" {
-  description = "The NFS share path."
-  type        = string
-}
-
-# --- Cert-Manager ---
-
-variable "enable_cert_manager_node_trust" {
-  description = "Deploy the DaemonSet that installs the internal CA into each node's trust store."
-  type        = bool
-  default     = true
-}
-
-# --- Gitea ---
-
-variable "gitea_namespace" {
-  description = "Namespace for Gitea"
-  type        = string
-  default     = "gitea"
-}
-
-variable "gitea_admin_password" {
-  description = "Admin password for Gitea"
-  type        = string
+  default     = "ca-issuer"
 }
 
 variable "global_storage_class" {
-  description = "Global storage class for Gitea"
+  description = "StorageClass for persistent volumes (gitea, grafana, rustpad)."
   type        = string
   default     = "standard"
 }
 
-variable "host_aliases" {
-  description = "Hostname aliases for Gitea"
-  type = list(object({
-    ip        = string
-    hostnames = list(string)
-  }))
+# --- Gitea ---
+
+variable "gitea_admin_password" {
+  description = "Admin password for Gitea."
+  type        = string
+  sensitive   = true
 }
 
 variable "ssh_external_host" {
-  description = "External SSH hostname for Gitea"
+  description = "Hostname Gitea advertises for ssh clone URLs."
   type        = string
+  default     = "ssh.gitea.local"
 }
 
 variable "ssh_load_balancer_ip" {
-  description = "LoadBalancer IP for Gitea SSH service"
+  description = "LoadBalancer IP for the Gitea ssh Service (from your LB pool)."
   type        = string
 }
 
-variable "ingress_hosts" {
-  description = "Ingress hostnames for Gitea"
-  type        = list(string)
-}
-
-variable "redis_enabled" {
-  description = "Enable Redis for Gitea"
-  type        = bool
-  default     = true
-}
-
 variable "postgresql_enabled" {
-  description = "Enable PostgreSQL for Gitea"
+  description = "Use the chart's bundled single-node PostgreSQL for Gitea."
   type        = bool
   default     = true
+}
+
+# --- Drone ---
+# Drone authenticates against Gitea with an OAuth2 application. Create it in
+# Gitea after the first apply (Settings -> Applications, redirect URI
+# https://drone.local/login), then set these and apply again.
+
+variable "drone_gitea_client_id" {
+  description = "Client id of the Gitea OAuth2 application for Drone."
+  type        = string
+  default     = ""
+}
+
+variable "drone_gitea_client_secret" {
+  description = "Client secret of the Gitea OAuth2 application for Drone."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "drone_rpc_secret" {
+  description = "Shared secret between the Drone server and its runners."
+  type        = string
+  sensitive   = true
 }
 
 # --- Grafana ---
 
 variable "grafana_namespace" {
-  description = "Namespace for Grafana"
+  description = "Namespace for Grafana."
   type        = string
+  default     = "grafana"
 }
 
 variable "grafana_admin_password" {
-  description = "Admin password for Grafana"
+  description = "Admin password for Grafana."
   type        = string
-}
-
-variable "grafana_host" {
-  description = "Host for Grafana ingress"
-  type        = string
-}
-
-variable "grafana_tls_secret_name" {
-  description = "TLS secret name for Grafana ingress"
-  type        = string
+  sensitive   = true
 }
 
 # --- Harbor ---
 
 variable "harbor_namespace" {
-  description = "Namespace for Harbor"
+  description = "Namespace for Harbor."
   type        = string
-}
-
-variable "harbor_ingress_host" {
-  description = "Ingress host for Harbor"
-  type        = string
-}
-
-variable "harbor_ingress_class" {
-  description = "Ingress class for Harbor"
-  type        = string
-}
-
-variable "harbor_cluster_issuer" {
-  description = "Cluster issuer for Harbor"
-  type        = string
+  default     = "harbor"
 }
 
 variable "harbor_external_url" {
-  description = "External URL for Harbor"
+  description = "URL clients use to reach Harbor (what the Gateway serves)."
   type        = string
+  default     = "https://harbor.local"
 }
 
 variable "harbor_ipv6_enabled" {
-  description = "Enable IPv6 for Harbor"
+  description = "Enable IPv6 in Harbor's nginx."
   type        = bool
-}
-
-# --- JupyterHub ---
-
-variable "jupyterhub_namespace" {
-  description = "Namespace for JupyterHub"
-  type        = string
-}
-
-variable "jupyterhub_host" {
-  description = "Host for JupyterHub ingress"
-  type        = string
-}
-
-variable "jupyterhub_tls_secret_name" {
-  description = "TLS secret name for JupyterHub ingress"
-  type        = string
-}
-
-variable "jupyterhub_ingress_class" {
-  description = "Ingress class for JupyterHub"
-  type        = string
-}
-
-variable "jupyterhub_cluster_issuer" {
-  description = "Cluster issuer for JupyterHub"
-  type        = string
-}
-
-# --- MinIO ---
-
-variable "minio_namespace" {
-  description = "Namespace for MinIO"
-  type        = string
-}
-
-variable "minio_user" {
-  description = "Admin user for MinIO."
-  type        = string
-}
-
-variable "minio_password" {
-  description = "Admin password for MinIO."
-  type        = string
-}
-
-variable "minio_host" {
-  description = "Host for MinIO ingress"
-  type        = string
-}
-
-variable "minio_tls_secret_name" {
-  description = "TLS secret name for MinIO ingress"
-  type        = string
-}
-
-variable "minio_ingress_class" {
-  description = "Ingress class for MinIO"
-  type        = string
-}
-
-variable "minio_cluster_issuer" {
-  description = "Cluster issuer for MinIO"
-  type        = string
-}
-
-variable "minio_velero_access" {
-  description = "Velero access username for MinIO"
-  type        = string
-}
-
-variable "minio_velero_secret" {
-  description = "Velero access password for MinIO"
-  type        = string
-}
-
-# --- MLflow ---
-
-variable "mlflow_namespace" {
-  description = "Namespace for MLflow"
-  type        = string
-}
-
-variable "mlflow_host" {
-  description = "Host for MLflow ingress"
-  type        = string
-}
-
-variable "mlflow_tls_secret_name" {
-  description = "TLS secret name for MLflow ingress"
-  type        = string
-}
-
-variable "mlflow_ingress_class" {
-  description = "Ingress class for MLflow"
-  type        = string
-}
-
-variable "mlflow_cluster_issuer" {
-  description = "Cluster issuer for MLflow"
-  type        = string
+  default     = false
 }
 
 # --- Postgres ---
 
 variable "percona_postgres_namespace" {
-  description = "The Kubernetes namespace where Percona Postgres will be deployed."
+  description = "Namespace for the Percona Postgres operator."
   type        = string
+  default     = "percona-postgres"
 }
 
 variable "zalando_postgres_namespace" {
-  description = "The Kubernetes namespace where Zalando Postgres will be deployed."
+  description = "Namespace for the Zalando Postgres operator and its UI."
   type        = string
-}
-
-variable "zalando_postgres_ui_ingress_class" {
-  description = "The ingress class to be used for Zalando Postgres UI."
-  type        = string
-}
-
-variable "zalando_postgres_ui_tls_secret_name" {
-  description = "The name of the TLS secret for Zalando Postgres UI ingress."
-  type        = string
-}
-
-variable "zalando_postgres_ui_ingress_host" {
-  description = "The hostname for Zalando Postgres UI ingress."
-  type        = string
-}
-
-# --- Prometheus ---
-
-variable "prometheus_namespace" {
-  description = "The Kubernetes namespace where Prometheus will be deployed."
-  type        = string
-}
-
-variable "prometheus_admin_password" {
-  description = "The admin password for Prometheus."
-  type        = string
-}
-
-# --- Redis ---
-
-variable "redis_namespace" {
-  description = "The Kubernetes namespace where Redis will be deployed."
-  type        = string
-}
-
-variable "redis_auth_enabled" {
-  description = "Specifies whether Redis authentication is enabled."
-  type        = bool
-}
-
-variable "redis_architecture" {
-  description = "The architecture of the Redis deployment (standalone|replication)."
-  type        = string
+  default     = "zalando-postgres"
 }
 
 # --- Rustpad ---
 
 variable "rustpad_namespace" {
-  description = "The Kubernetes namespace where Rustpad will be deployed."
+  description = "Namespace for Rustpad."
   type        = string
-}
-
-variable "rustpad_ingress_class" {
-  description = "The ingress class to be used for Rustpad."
-  type        = string
-}
-
-variable "rustpad_tls_secret_name" {
-  description = "The name of the TLS secret for Rustpad ingress."
-  type        = string
-}
-
-variable "rustpad_ingress_host" {
-  description = "The hostname for Rustpad ingress."
-  type        = string
+  default     = "rustpad"
 }
 
 variable "rustpad_pvc_size" {
-  description = "The storage size for Rustpad."
+  description = "Size of the Rustpad data volume, in GiB."
   type        = number
+  default     = 4
 }
 
 # --- Velero ---
 
 variable "velero_credentials_secret" {
-  description = "The secret contents for Velero credentials."
+  description = "Contents of Velero's cloud credentials file (e.g. an AWS-style [default] profile for MinIO)."
   type        = string
+  sensitive   = true
 }
 
 variable "velero_backup_storage_name" {
-  description = "The name of the backup storage location for Velero."
+  description = "Name of Velero's BackupStorageLocation."
   type        = string
+  default     = "backups"
 }
 
 variable "velero_backup_storage_provider" {
-  description = "The provider for the backup storage location for Velero."
+  description = "Provider plugin for the BackupStorageLocation."
   type        = string
+  default     = "aws"
 }
 
 variable "velero_backup_storage_bucket" {
-  description = "The bucket name for the backup storage location for Velero."
+  description = "Bucket for the BackupStorageLocation."
   type        = string
+  default     = "velero-backups"
 }
 
 variable "velero_backup_storage_region" {
-  description = "The region for the backup storage location for Velero."
+  description = "Region for the BackupStorageLocation."
   type        = string
+  default     = "us-east-1"
 }

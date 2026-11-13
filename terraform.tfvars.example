@@ -1,0 +1,51 @@
+# Copy to terraform.tfvars (gitignored) and edit. Every stack (apps/, system/,
+# data/) reads this same file through a symlink. Variables with defaults in
+# variables.tf are listed commented-out with their default.
+
+kubeconfig = "/home/you/.kube/config"
+
+# cert-manager ClusterIssuer the shared Gateway asks for its certificates.
+# cluster_issuer = "ca-issuer"
+
+# StorageClass for the PVCs (gitea, grafana, rustpad).
+# global_storage_class = "standard"
+
+# --- Gitea ---
+gitea_admin_password = "change-me"
+# From your LoadBalancer pool (MetalLB / Cilium LB IPAM): Gitea ssh.
+ssh_load_balancer_ip = "192.168.133.9"
+# ssh_external_host  = "ssh.gitea.local"
+# postgresql_enabled = true
+
+# --- Drone --- (fill in after creating the OAuth2 app in Gitea, then re-apply)
+drone_rpc_secret = "change-me"
+# drone_gitea_client_id     = ""
+# drone_gitea_client_secret = ""
+
+# --- Grafana ---
+grafana_admin_password = "change-me"
+# grafana_namespace = "grafana"
+
+# --- Harbor ---
+# harbor_namespace    = "harbor"
+# harbor_external_url = "https://harbor.local"
+# harbor_ipv6_enabled = false
+
+# --- Postgres ---
+# percona_postgres_namespace = "percona-postgres"
+# zalando_postgres_namespace = "zalando-postgres"
+
+# --- Rustpad ---
+# rustpad_namespace = "rustpad"
+# rustpad_pvc_size  = 4
+
+# --- Velero ---
+velero_credentials_secret = <<-CREDS
+  [default]
+  aws_access_key_id = backup-user
+  aws_secret_access_key = backup-password
+CREDS
+# velero_backup_storage_name     = "backups"
+# velero_backup_storage_provider = "aws"
+# velero_backup_storage_bucket   = "velero-backups"
+# velero_backup_storage_region   = "us-east-1"

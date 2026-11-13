@@ -5,14 +5,14 @@ resource "helm_release" "grafana" {
   namespace        = var.grafana_namespace
   create_namespace = true
 
-  values = [
-    <<EOF
-adminPassword: admin
-persistence:
-  enabled: true
-useStatefulSet: true
-EOF
-  ]
+  values = [yamlencode({
+    adminPassword = var.grafana_admin_password
+    persistence = {
+      enabled          = true
+      storageClassName = var.global_storage_class
+    }
+    useStatefulSet = true
+  })]
 }
 
 # Exposure handled by the shared Envoy Gateway (grafana.local -> grafana:80).

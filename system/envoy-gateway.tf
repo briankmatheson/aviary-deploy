@@ -20,7 +20,7 @@ locals {
   # are generated per entry. `namespace`/`service`/`port` identify the backend.
   vhosts = {
     argo        = { host = "argo.local", namespace = "argo", service = "argo-server", port = 80, tls = "argo-tls" }
-    aviary      = { host = "aviary.local", namespace = "kube-system", service = "aviary", port = 8086, tls = "aviary-tls" }
+    aviary      = { host = "aviary.local", namespace = "kube-system", service = "aviary-frontend", port = 8086, tls = "aviary-tls" }
     bash        = { host = "bash.local", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls" }
     drone       = { host = "drone.local", namespace = "drone", service = "drone", port = 80, tls = "drone-tls" }
     rustpad     = { host = "rustpad.local", namespace = "rustpad", service = "rustpad", port = 3030, tls = "rustpad-tls" }
@@ -29,8 +29,9 @@ locals {
     velero      = { host = "velero.local", namespace = "velero", service = "velero", port = 8085, tls = "velero-tls" }
     gitea       = { host = "gitea.local", namespace = "gitea", service = "gitea-http", port = 3000, tls = "gitea-tls" }
     postgres-ui = { host = "postgres-ui.local", namespace = "zalando-postgres", service = "postgres-ui-postgres-operator-ui", port = 80, tls = "postgres-ui-tls" }
-    qdrant      = { host = "qdrant.local", namespace = "qdrant", service = "qdrant", port = 6333, tls = "qdrant-tls" }
-    headlamp    = { host = "headlamp.local", namespace = "headlamp", service = "headlamp", port = 80, tls = "headlamp-tls" }
+    # qdrant lives in disabled/; its route would fail without the namespace:
+    # qdrant    = { host = "qdrant.local", namespace = "qdrant", service = "qdrant", port = 6333, tls = "qdrant-tls" }
+    headlamp = { host = "headlamp.local", namespace = "headlamp", service = "headlamp", port = 80, tls = "headlamp-tls" }
   }
 
   # Per-host HTTPS listeners, rendered with explicit absolute indentation so the
@@ -57,8 +58,7 @@ resource "helm_release" "envoy_gateway" {
   chart            = "gateway-helm"
   namespace        = "envoy-gateway-system"
   create_namespace = true
-  # Pin to a known-good release before promoting past wip.
-  # version = "v1.2.1"
+  version          = "v1.10.0"
 }
 
 resource "kubernetes_namespace" "gateway" {
@@ -154,7 +154,7 @@ resource "kubectl_manifest" "httproute" {
 
   # Requires the Gateway (CRDs + listener) and the backend namespace to exist.
   # Only same-stack releases are ordered here; apps in the apps/ and data/
-  # stacks (argo, drone, rustpad, bash, gitea, zalando_postgres, qdrant) are
+  # stacks (argo, drone, rustpad, bash, gitea, zalando_postgres) are
   # applied separately, so their namespaces must already exist when this runs.
   depends_on = [
     kubectl_manifest.gateway,
