@@ -45,11 +45,18 @@ resource "helm_release" "gitea" {
     ingress = {
       enabled = false
     }
-    # Bundled single-node Postgres; disable the HA variant to keep one DB.
+    # Bundled single-node Postgres and Valkey; the HA/cluster variants the
+    # chart defaults to need more nodes than a small cluster has.
     postgresql = {
       enabled = var.postgresql_enabled
     }
     "postgresql-ha" = {
+      enabled = false
+    }
+    valkey = {
+      enabled = true
+    }
+    "valkey-cluster" = {
       enabled = false
     }
   })]
