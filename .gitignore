@@ -5,3 +5,4 @@ terraform.tfstate*
 .aider*
 terraform.tfvars
 tfplan
+terraform.tfvars.orig
