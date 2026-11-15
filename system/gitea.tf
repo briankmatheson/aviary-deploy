@@ -33,6 +33,12 @@ resource "helm_release" "gitea" {
           ROOT_URL   = "https://gitea.${var.base_domain}/"
           SSH_DOMAIN = local.ssh_external_host
         }
+        # No self-service signup: Gitea gates the aviary landing page's
+        # cluster-admin actions, so accounts are admin-created only.
+        service = {
+          DISABLE_REGISTRATION     = true
+          SHOW_REGISTRATION_BUTTON = false
+        }
       }
     }
     service = {
