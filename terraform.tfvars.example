@@ -1,83 +1,95 @@
-# Copy to terraform.tfvars (gitignored) and edit. Every stack (data/, apps/,
-# system/) reads this same file through a symlink. Required vars (no default in
-# variables.tf) are set below; optional ones are shown commented at their
-# default. Layout: globals first, then one block per component.
+# aviary-deploy — copy to terraform.tfvars (gitignored) and fill in.
+# Every stack (apps/, system/) reads this same file through a symlink.
+#
+# Required (no default): kubeconfig, cluster_name, ssh_load_balancer_ip, and the
+# passwords / velero credentials below. Everything else is shown commented at
+# its default — uncomment to override.
+#
+# Every secret here is the placeholder CHANGE_ME. Replace each before applying;
+# they need not match (they're identical here only to keep the template scannable).
 
-# ============================ Globals ============================
+# ================================ Globals ================================
 
 kubeconfig           = "/home/you/.kube/config"
-cluster_name         = "my-cluster"   # capi cluster name
+cluster_name         = "my-cluster"    # capi cluster name
 
 # Apps are served at <app>.<base_domain>, the landing page at <base_domain>.
 # Point a wildcard DNS record (or /etc/hosts) at the Gateway's LoadBalancer IP.
 base_domain          = "aviary.local"
 
-# StorageClass for every PVC (gitea, grafana, rustpad, postgres).
+# StorageClass for every PVC (gitea, grafana, rustpad, cnpg databases).
 global_storage_class = "standard"
 
-# cert-manager ClusterIssuer the shared Gateway asks for its TLS certificates.
-# cluster_issuer     = "ca-issuer"        # or "internal-acme" for a platform CA
+# cert-manager ClusterIssuer the shared Gateway uses for its TLS certificates.
+#   internal-acme : the shared step-ca on the management cluster. One root to
+#                   trust, and it survives workload-cluster rebuilds.
+#   ca-issuer     : a per-cluster self-signed root, regenerated on every
+#                   rebuild — so every client has to re-trust it each time.
+cluster_issuer       = "internal-acme"
+
+# Prefix applied to every app namespace this project creates (RFC 1123:
+# lowercase, no underscores). "" disables it.
+# ns_prefix          = "aviary-"
 
 # Shared Envoy Gateway the apps' HTTPRoutes attach to.
 # gateway_name       = "noname"
 # gateway_namespace  = "envoy-gateway"
 
-# ============================ Gitea ============================
+# ================================= Gitea =================================
 
-gitea_admin_password = "change-me"
-# Gitea ssh Service LoadBalancer IP, from your LB pool (MetalLB / Cilium LB IPAM).
+gitea_admin_password = "CHANGE_ME"
+# Gitea ssh Service LoadBalancer IP, from your LB pool (Cilium LB IPAM / MetalLB).
 ssh_load_balancer_ip = "192.168.133.9"
 # ssh_external_host  = ""                 # default ssh.gitea.<base_domain>
-# postgresql_enabled = true               # chart's bundled single-node Postgres
+# postgresql_enabled = true               # the chart's bundled single-node Postgres
 
-# ============================ Drone ============================
+# ================================= Drone =================================
 # After the first apply, create the Gitea OAuth2 app (redirect
 # https://drone.<base_domain>/login), then set id/secret below and re-apply.
 
-drone_rpc_secret            = "change-me"
+drone_rpc_secret            = "CHANGE_ME"
 # drone_gitea_client_id     = ""
-# drone_gitea_client_secret = ""
+# drone_gitea_client_secret = "CHANGE_ME"
 
-# ============================ Grafana ============================
+# ================================ Grafana ================================
 
-grafana_admin_password = "change-me"
+grafana_admin_password = "CHANGE_ME"
 # grafana_namespace    = "grafana"
 
-# ============================ CloudBeaver ============================
+# ============================== CloudBeaver ==============================
 
-cloudbeaver_admin_password = "change-me"
+cloudbeaver_admin_password = "CHANGE_ME"
 # cloudbeaver_chart_path   = "./charts/cloudbeaver-deploy/k8s"
 
-# ============================ Harbor ============================
+# ========================= Postgres (CloudNativePG) ======================
+
+# cnpg_namespace = "cnpg-system"          # the CloudNativePG operator's namespace
+
+# ================================ Harbor =================================
 
 # harbor_namespace    = "harbor"
 # harbor_external_url = ""                 # default https://harbor.<base_domain>
 # harbor_ipv6_enabled = false
 
-# ============================ Postgres ============================
-
-# percona_postgres_namespace = "percona-postgres"
-# zalando_postgres_namespace = "zalando-postgres"
-
-# ============================ Rustpad ============================
+# ================================ Rustpad ================================
 
 # rustpad_namespace = "rustpad"
 # rustpad_pvc_size  = 4
 
-# ============================ Aviary frontend ============================
+# ============================= Aviary frontend ===========================
 
 # aviary_frontend_image = "briankmatheson/aviary-frontend:1.0.2"
 
-# ============================ SigNoz ============================
+# ================================= SigNoz ================================
 
 # signoz_namespace = "signoz"
 
-# ============================ Velero ============================
+# ================================= Velero ================================
 
 velero_credentials_secret = <<-CREDS
   [default]
-  aws_access_key_id = backup-user
-  aws_secret_access_key = backup-password
+  aws_access_key_id = CHANGE_ME
+  aws_secret_access_key = CHANGE_ME
 CREDS
 # velero_backup_storage_name     = "backups"
 # velero_backup_storage_provider = "aws"
