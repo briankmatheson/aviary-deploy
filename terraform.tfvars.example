@@ -1,52 +1,79 @@
-# Copy to terraform.tfvars (gitignored) and edit. Every stack (apps/, system/,
-# data/) reads this same file through a symlink. Variables with defaults in
-# variables.tf are listed commented-out with their default.
+# Copy to terraform.tfvars (gitignored) and edit. Every stack (data/, apps/,
+# system/) reads this same file through a symlink. Required vars (no default in
+# variables.tf) are set below; optional ones are shown commented at their
+# default. Layout: globals first, then one block per component.
 
-kubeconfig = "/home/you/.kube/config"
+# ============================ Globals ============================
 
-# Apps live at <app>.<base_domain>, the landing page at <base_domain>. Point a
-# wildcard DNS record (or /etc/hosts lines) at the Gateway's LoadBalancer IP.
-# base_domain = "aviary.local"
+kubeconfig           = "/home/you/.kube/config"
+cluster_name         = "my-cluster"   # capi cluster name
 
-# Landing page image; override to pull from an internal registry.
-# aviary_frontend_image = "briankmatheson/aviary-frontend:1.0.2"
+# Apps are served at <app>.<base_domain>, the landing page at <base_domain>.
+# Point a wildcard DNS record (or /etc/hosts) at the Gateway's LoadBalancer IP.
+base_domain          = "aviary.local"
 
-# cert-manager ClusterIssuer the shared Gateway asks for its certificates.
-# cluster_issuer = "ca-issuer"   # e.g. internal-acme for the platform CA (simple: workload-platform)
+# StorageClass for every PVC (gitea, grafana, rustpad, postgres).
+global_storage_class = "standard"
 
-# StorageClass for the PVCs (gitea, grafana, rustpad).
-# global_storage_class = "standard"
+# cert-manager ClusterIssuer the shared Gateway asks for its TLS certificates.
+# cluster_issuer     = "ca-issuer"        # or "internal-acme" for a platform CA
 
-# --- Gitea ---
+# Shared Envoy Gateway the apps' HTTPRoutes attach to.
+# gateway_name       = "noname"
+# gateway_namespace  = "envoy-gateway"
+
+# ============================ Gitea ============================
+
 gitea_admin_password = "change-me"
-# From your LoadBalancer pool (MetalLB / Cilium LB IPAM): Gitea ssh.
+# Gitea ssh Service LoadBalancer IP, from your LB pool (MetalLB / Cilium LB IPAM).
 ssh_load_balancer_ip = "192.168.133.9"
-# ssh_external_host  = ""   # default ssh.gitea.<base_domain>
-# postgresql_enabled = true
+# ssh_external_host  = ""                 # default ssh.gitea.<base_domain>
+# postgresql_enabled = true               # chart's bundled single-node Postgres
 
-# --- Drone --- (fill in after creating the OAuth2 app in Gitea, then re-apply)
-drone_rpc_secret = "change-me"
+# ============================ Drone ============================
+# After the first apply, create the Gitea OAuth2 app (redirect
+# https://drone.<base_domain>/login), then set id/secret below and re-apply.
+
+drone_rpc_secret            = "change-me"
 # drone_gitea_client_id     = ""
 # drone_gitea_client_secret = ""
 
-# --- Grafana ---
-grafana_admin_password = "change-me"
-# grafana_namespace = "grafana"
+# ============================ Grafana ============================
 
-# --- Harbor ---
+grafana_admin_password = "change-me"
+# grafana_namespace    = "grafana"
+
+# ============================ CloudBeaver ============================
+
+cloudbeaver_admin_password = "change-me"
+# cloudbeaver_chart_path   = "./charts/cloudbeaver-deploy/k8s"
+
+# ============================ Harbor ============================
+
 # harbor_namespace    = "harbor"
-# harbor_external_url = ""   # default https://harbor.<base_domain>
+# harbor_external_url = ""                 # default https://harbor.<base_domain>
 # harbor_ipv6_enabled = false
 
-# --- Postgres ---
+# ============================ Postgres ============================
+
 # percona_postgres_namespace = "percona-postgres"
 # zalando_postgres_namespace = "zalando-postgres"
 
-# --- Rustpad ---
+# ============================ Rustpad ============================
+
 # rustpad_namespace = "rustpad"
 # rustpad_pvc_size  = 4
 
-# --- Velero ---
+# ============================ Aviary frontend ============================
+
+# aviary_frontend_image = "briankmatheson/aviary-frontend:1.0.2"
+
+# ============================ SigNoz ============================
+
+# signoz_namespace = "signoz"
+
+# ============================ Velero ============================
+
 velero_credentials_secret = <<-CREDS
   [default]
   aws_access_key_id = backup-user

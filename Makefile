@@ -11,9 +11,9 @@
 STACKS  := data apps system
 RSTACKS := system apps data
 
-.PHONY: all init validate fmt plan apply apply-auto destroy refresh output clean $(STACKS)
+.PHONY: all set-dns apply-dns init validate fmt plan apply apply-auto destroy refresh output clean $(STACKS)
 
-all: apply-auto
+all: apply-dns
 
 init validate plan apply apply-auto refresh output clean:
 	@for s in $(STACKS); do $(MAKE) --no-print-directory -C $$s $@ || exit 1; done
@@ -28,3 +28,12 @@ fmt:
 # Drive one stack: make apps CMD=plan (default: apply-auto)
 $(STACKS):
 	$(MAKE) --no-print-directory -C $@ $(if $(CMD),$(CMD),apply-auto)
+
+# Register the aviary DNS zone in the management cluster CoreDNS (wildcard
+# -> Gateway LB IP, ssh.gitea -> Gitea ssh LB). Run after the stacks apply.
+set-dns:
+	@bin/set-dns.sh
+
+# Apply every stack, then register DNS. This is what plain `make` runs.
+apply-dns: apply-auto
+	@$(MAKE) --no-print-directory set-dns
