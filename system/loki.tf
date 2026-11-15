@@ -6,6 +6,7 @@
 resource "helm_release" "loki" {
   name             = "loki"
   chart            = "loki"
+  version          = "7.6.0"
   repository       = "https://grafana.github.io/helm-charts"
   namespace        = local.monitoring_ns
   create_namespace = true
@@ -51,6 +52,7 @@ resource "helm_release" "loki" {
 resource "helm_release" "promtail" {
   name       = "promtail"
   chart      = "promtail"
+  version    = "6.17.1"
   repository = "https://grafana.github.io/helm-charts"
   namespace  = local.monitoring_ns
   timeout    = 300

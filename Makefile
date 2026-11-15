@@ -44,3 +44,4 @@ apply-dns: apply-auto
 oauth:
 	@bin/setup-oauth.sh
 	@$(MAKE) --no-print-directory apps CMD=apply-auto
+	@kc=$$(grep -m1 kubeconfig terraform.tfvars | sed 's/.*= *//; s/"//g'); KUBECONFIG=$$kc kubectl -n aviary rollout restart deploy/aviary-frontend && KUBECONFIG=$$kc kubectl -n aviary rollout status deploy/aviary-frontend --timeout=120s

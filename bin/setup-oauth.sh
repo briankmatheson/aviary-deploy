@@ -27,7 +27,7 @@ PASS=$(tfv gitea_admin_password)
 [ -n "$PASS" ] || { echo "gitea_admin_password not set in $TFVARS" >&2; exit 1; }
 KC=$(tfv kubeconfig)
 export KUBECONFIG="${KUBECONFIG:-$KC}"
-REDIR="https://aviary.${BASE_DOMAIN}/oauth/callback"
+REDIR="https://${BASE_DOMAIN}/oauth/callback"
 
 echo "Registering Gitea OAuth2 app '$APP_NAME' (redirect $REDIR) via $GITEA_NS/gitea-http ..."
 kubectl -n "$GITEA_NS" port-forward svc/gitea-http "$PORT:3000" >/dev/null 2>&1 &
