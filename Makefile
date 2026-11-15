@@ -37,3 +37,10 @@ set-dns:
 # Apply every stack, then register DNS. This is what plain `make` runs.
 apply-dns: apply-auto
 	@$(MAKE) --no-print-directory set-dns
+
+.PHONY: oauth
+# Register the Gitea OAuth2 app for the landing page, write it into tfvars,
+# then re-apply the apps stack to switch login on. Run after the stacks are up.
+oauth:
+	@bin/setup-oauth.sh
+	@$(MAKE) --no-print-directory apps CMD=apply-auto
