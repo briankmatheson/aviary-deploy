@@ -182,6 +182,41 @@ variable "velero_backup_storage_region" {
   default     = "us-east-1"
 }
 
+variable "signoz_namespace" {
+  description = "Namespace for SigNoz observability tool"
+  type        = string
+  default     = "signoz"
+}
+
+variable "cluster_name" {
+  description = "capi name of cluster"
+  type        = string
+}
+
+variable "gateway_name" {
+  description = "envoy gateway name"
+  type        = string
+  default     = "noname"
+}
+
+variable "gateway_namespace" {
+  description = "envoy gateway namespace"
+  type        = string
+  default     = "envoy-gateway"
+}
+
+variable "cloudbeaver_admin_password" {
+  description = "Initial admin password for CloudBeaver"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudbeaver_chart_path" {
+  description = "Local path to the cloned dbeaver/cloudbeaver-deploy/k8s directory"
+  type        = string
+  default     = "./charts/cloudbeaver-deploy/k8s"
+}
+
 # --- Derived ---
 
 locals {

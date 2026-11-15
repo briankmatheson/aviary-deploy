@@ -158,7 +158,7 @@ resource "kubectl_manifest" "httproute" {
   # applied separately, so their namespaces must already exist when this runs.
   depends_on = [
     kubectl_manifest.gateway,
-    helm_release.grafana,
+    helm_release.signoz,
     helm_release.harbor,
     helm_release.velero,
     helm_release.headlamp,
