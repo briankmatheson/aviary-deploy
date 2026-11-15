@@ -137,6 +137,34 @@ spec:
               value: ${var.base_domain}
             - name: CLUSTER_ISSUER
               value: ${var.cluster_issuer}
+            - name: BASE_URL
+              value: https://${var.base_domain}
+            - name: OAUTH_ISSUER
+              value: https://gitea.${var.base_domain}
+            - name: GITEA_INTERNAL
+              value: http://gitea-http.${var.ns_prefix}gitea.svc.cluster.local:3000
+            - name: OAUTH_ADMIN_ONLY
+              value: "${var.aviary_oauth_admin_only}"
+            - name: OAUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aviary-frontend-oauth
+                  key: client_id
+            - name: OAUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aviary-frontend-oauth
+                  key: client_secret
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aviary-frontend-oauth
+                  key: session_secret
+            - name: BYPASS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: aviary-frontend-oauth
+                  key: bypass_token
           readinessProbe:
             httpGet:
               path: /healthz
@@ -148,7 +176,7 @@ spec:
             limits:
               memory: 256Mi
 EOF
-  depends_on = [kubernetes_cluster_role_binding.aviary_frontend, kubernetes_role_binding.aviary_frontend_ca]
+  depends_on = [kubernetes_cluster_role_binding.aviary_frontend, kubernetes_role_binding.aviary_frontend_ca, kubernetes_secret.aviary_frontend_oauth]
 }
 
 resource "kubernetes_service" "aviary_frontend" {
@@ -185,5 +213,21 @@ resource "kubernetes_cluster_role_binding" "aviary_frontend_admin" {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account.aviary_frontend.metadata[0].name
     namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
+
+
+# OAuth2 client (a gitea application) + session/bypass secrets for the landing
+# page's login. Empty values (the variable defaults) leave login disabled.
+resource "kubernetes_secret" "aviary_frontend_oauth" {
+  metadata {
+    name      = "aviary-frontend-oauth"
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+  data = {
+    client_id      = var.aviary_oauth_client_id
+    client_secret  = var.aviary_oauth_client_secret
+    session_secret = var.aviary_session_secret
+    bypass_token   = var.aviary_bypass_token
   }
 }

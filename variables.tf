@@ -217,3 +217,32 @@ variable "ns_prefix" {
   type        = string
   default     = "aviary-"
 }
+
+variable "aviary_oauth_client_id" {
+  description = "OAuth2 client id (gitea application) for the aviary landing page login. Empty disables login."
+  type        = string
+  default     = ""
+}
+variable "aviary_oauth_client_secret" {
+  description = "OAuth2 client secret for the aviary landing page."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "aviary_session_secret" {
+  description = "Secret that signs the aviary landing page's session cookies."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "aviary_bypass_token" {
+  description = "Shared token that bypasses aviary login (Authorization: Bearer, X-Aviary-Token, or ?token=), for automation."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "aviary_oauth_admin_only" {
+  description = "Require the gitea user to be an admin to use the aviary landing page."
+  type        = bool
+  default     = false
+}
