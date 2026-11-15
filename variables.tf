@@ -176,12 +176,6 @@ variable "velero_backup_storage_region" {
   default     = "us-east-1"
 }
 
-variable "signoz_namespace" {
-  description = "Namespace for SigNoz observability tool"
-  type        = string
-  default     = "signoz"
-}
-
 variable "cluster_name" {
   description = "capi name of cluster"
   type        = string

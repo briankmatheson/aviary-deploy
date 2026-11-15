@@ -166,3 +166,24 @@ resource "kubernetes_service" "aviary_frontend" {
   }
 }
 # Exposure handled by the shared Envoy Gateway (<base_domain> -> aviary/aviary-frontend:8086).
+
+# Stopping/starting apps from the landing page runs helm uninstall/install as
+# this ServiceAccount, so it must be able to delete and create any resource an
+# app chart contains -- i.e. cluster-admin. The page has no auth of its own, so
+# anyone who can reach it can stop/start apps. That is acceptable on the homelab
+# mesh behind the gateway; gate the buttons (or the page) before exposing it.
+resource "kubernetes_cluster_role_binding" "aviary_frontend_admin" {
+  metadata {
+    name = "aviary-frontend-admin"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.aviary_frontend.metadata[0].name
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
