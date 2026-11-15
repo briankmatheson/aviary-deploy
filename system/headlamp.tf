@@ -5,6 +5,6 @@ resource "helm_release" "headlamp" {
   name             = "headlamp"
   repository       = "https://kubernetes-sigs.github.io/headlamp/"
   chart            = "headlamp"
-  namespace        = "headlamp"
+  namespace        = "${var.ns_prefix}headlamp"
   create_namespace = true
 }

@@ -2,7 +2,7 @@ resource "helm_release" "bash" {
   name             = "bash"
   repository       = "https://cloudtty.github.io/cloudtty"
   chart            = "cloudtty"
-  namespace        = "bash"
+  namespace        = "${var.ns_prefix}bash"
   create_namespace = true
 }
 resource "kubectl_manifest" "bash" {

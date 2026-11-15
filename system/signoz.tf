@@ -2,7 +2,7 @@ resource "helm_release" "signoz" {
   name             = "signoz"
   chart            = "signoz"
   repository       = "https://charts.signoz.io"
-  namespace        = var.signoz_namespace
+  namespace        = "${var.ns_prefix}${var.signoz_namespace}"
   create_namespace = true
   timeout          = 600
 
@@ -32,12 +32,12 @@ resource "helm_release" "signoz_k8s_infra" {
   name       = "signoz-k8s-infra"
   chart      = "k8s-infra"
   repository = "https://charts.signoz.io"
-  namespace  = var.signoz_namespace
+  namespace  = "${var.ns_prefix}${var.signoz_namespace}"
   depends_on = [helm_release.signoz]
 
   values = [yamlencode({
     clusterName           = var.cluster_name
-    otelCollectorEndpoint = "http://signoz-otel-collector.${var.signoz_namespace}.svc.cluster.local:4318"
+    otelCollectorEndpoint = "http://signoz-otel-collector.${var.ns_prefix}${var.signoz_namespace}.svc.cluster.local:4318"
     otelInsecure          = true
   })]
 }
@@ -48,7 +48,7 @@ resource "kubernetes_manifest" "signoz_httproute" {
     kind       = "HTTPRoute"
     metadata = {
       name      = "signoz"
-      namespace = var.signoz_namespace
+      namespace = "${var.ns_prefix}${var.signoz_namespace}"
     }
     spec = {
       parentRefs = [

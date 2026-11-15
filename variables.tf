@@ -124,16 +124,10 @@ variable "harbor_ipv6_enabled" {
 
 # --- Postgres ---
 
-variable "percona_postgres_namespace" {
-  description = "Namespace for the Percona Postgres operator."
+variable "cnpg_namespace" {
+  description = "Namespace for the CloudNativePG operator."
   type        = string
-  default     = "percona-postgres"
-}
-
-variable "zalando_postgres_namespace" {
-  description = "Namespace for the Zalando Postgres operator and its UI."
-  type        = string
-  default     = "zalando-postgres"
+  default     = "cnpg-system"
 }
 
 # --- Rustpad ---
@@ -222,4 +216,10 @@ variable "cloudbeaver_chart_path" {
 locals {
   ssh_external_host   = var.ssh_external_host != "" ? var.ssh_external_host : "ssh.gitea.${var.base_domain}"
   harbor_external_url = var.harbor_external_url != "" ? var.harbor_external_url : "https://harbor.${var.base_domain}"
+}
+
+variable "ns_prefix" {
+  description = "Prefix for every app namespace this project creates (RFC 1123: lowercase, no underscores). Empty = none."
+  type        = string
+  default     = "aviary-"
 }

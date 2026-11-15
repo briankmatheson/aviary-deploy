@@ -2,7 +2,7 @@ resource "helm_release" "grafana" {
   name             = "grafana"
   chart            = "grafana"
   repository       = "https://grafana.github.io/helm-charts"
-  namespace        = var.grafana_namespace
+  namespace        = "${var.ns_prefix}${var.grafana_namespace}"
   create_namespace = true
 
   values = [yamlencode({

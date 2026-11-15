@@ -2,7 +2,7 @@ resource "helm_release" "drone" {
   name             = "drone"
   repository       = "https://charts.drone.io"
   chart            = "drone"
-  namespace        = "drone"
+  namespace        = "${var.ns_prefix}drone"
   create_namespace = true
 
   # Ingress disabled; routed via the shared Envoy Gateway (see envoy-gateway.tf).
@@ -32,7 +32,7 @@ metadata:
   labels:
     app: gitea
   name: gitea
-  namespace: drone
+  namespace: ${var.ns_prefix}drone
 spec:
   externalName: aviary-gateway.envoy-gateway-system.svc.cluster.local
   selector:

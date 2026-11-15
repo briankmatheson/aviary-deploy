@@ -2,7 +2,7 @@ resource "helm_release" "velero" {
   name             = "velero"
   repository       = "https://vmware-tanzu.github.io/helm-charts"
   chart            = "velero"
-  namespace        = "velero"
+  namespace        = "${var.ns_prefix}velero"
   create_namespace = true
 
   # yamlencode() so the values nest; the chart ignores flat "a.b.c: v" keys.

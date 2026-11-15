@@ -14,7 +14,7 @@ resource "helm_release" "gitea" {
   name             = "gitea"
   chart            = "gitea"
   repository       = "https://dl.gitea.io/charts/"
-  namespace        = "gitea"
+  namespace        = "${var.ns_prefix}gitea"
   create_namespace = true
 
   # yamlencode() guarantees valid, correctly-nested YAML. The previous flat
@@ -66,9 +66,6 @@ resource "helm_release" "gitea" {
     }
   })]
 
-  depends_on = [
-    helm_release.postgres,
-  ]
 }
 
 # Exposure handled by the shared Envoy Gateway (gitea.<base_domain> -> gitea-http:3000).

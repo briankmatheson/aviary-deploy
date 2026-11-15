@@ -1,5 +1,5 @@
-# aviary-deploy: three independent OpenTofu stacks, each with its own state.
-# Apply order is data -> apps -> system (the system stack's HTTPRoutes land in
+# aviary-deploy: two independent OpenTofu stacks, each with its own state.
+# Apply order is apps -> system (the system stack's HTTPRoutes land in
 # the app namespaces and the apps' ExternalName aliases point at the gateway);
 # destroy runs in reverse. Per-stack targets live in stack.mk.
 #
@@ -8,8 +8,8 @@
 #   make apply-auto     # plan + apply in one go, in order
 #   make system CMD=plan   # one stack, any stack.mk target (default apply-auto)
 
-STACKS  := data apps system
-RSTACKS := system apps data
+STACKS  := apps system
+RSTACKS := system apps
 
 .PHONY: all set-dns apply-dns init validate fmt plan apply apply-auto destroy refresh output clean $(STACKS)
 

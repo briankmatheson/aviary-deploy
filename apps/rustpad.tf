@@ -3,7 +3,7 @@
 # restarts (rustpad is in-memory otherwise).
 resource "kubernetes_namespace" "rustpad" {
   metadata {
-    name = var.rustpad_namespace
+    name = "${var.ns_prefix}${var.rustpad_namespace}"
   }
 }
 

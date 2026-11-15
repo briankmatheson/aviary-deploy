@@ -2,7 +2,7 @@ resource "helm_release" "harbor" {
   name             = "harbor"
   repository       = "https://helm.goharbor.io"
   chart            = "harbor"
-  namespace        = var.harbor_namespace
+  namespace        = "${var.ns_prefix}${var.harbor_namespace}"
   create_namespace = true
   timeout          = 900 # eight pods + five abe volumes; 300s is too tight
 
