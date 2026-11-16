@@ -113,3 +113,9 @@ CREDS
 # axigen_mail_domain    = ""            # default: base_domain
 # axigen_timezone       = "America/New_York"
 # axigen_storage_size   = "10Gi"
+
+
+# Chat window on the landing page, served by Ollama on the GPU node
+# (needs a node labelled nvidia.com/gpu.present and the NVIDIA device plugin).
+# ollama_enabled    = true
+# aviary_chat_model = "llama3"

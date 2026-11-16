@@ -145,6 +145,10 @@ spec:
               value: http://gitea-http.${var.ns_prefix}gitea.svc.cluster.local:3000
             - name: OAUTH_ADMIN_ONLY
               value: "${var.aviary_oauth_admin_only}"
+            - name: CHAT_URL
+              value: "${local.aviary_chat_url}"
+            - name: CHAT_MODEL
+              value: "${var.aviary_chat_model}"
             - name: OAUTH_CLIENT_ID
               valueFrom:
                 secretKeyRef:

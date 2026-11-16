@@ -301,6 +301,32 @@ variable "ns_prefix" {
   default     = "aviary-"
 }
 
+# --- Ollama / chat window ---
+
+variable "ollama_enabled" {
+  description = "Run Ollama on the GPU node (apps/ollama.tf) and point the landing page's chat window at it."
+  type        = bool
+  default     = false
+}
+
+variable "ollama_image" {
+  description = "Ollama image."
+  type        = string
+  default     = "ollama/ollama:latest"
+}
+
+variable "aviary_chat_url" {
+  description = "OpenAI-compatible API base for the landing page's chat window. Empty: the cluster's Ollama if ollama_enabled, else no chat window."
+  type        = string
+  default     = ""
+}
+
+variable "aviary_chat_model" {
+  description = "Model the landing page's chat window talks to (must be pulled in Ollama)."
+  type        = string
+  default     = "llama3"
+}
+
 variable "aviary_oauth_client_id" {
   description = "OAuth2 client id (gitea application) for the aviary landing page login. Empty disables login."
   type        = string
