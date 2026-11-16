@@ -181,7 +181,7 @@ metadata:
   name: dns
   namespace: ${kubernetes_namespace.dns[0].metadata[0].name}
   labels:
-    aviary/group: apps
+    aviary/group: system
 spec:
   parentRefs:
     - name: aviary
