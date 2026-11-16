@@ -28,6 +28,7 @@ locals {
     harbor      = { host = "harbor.${var.base_domain}", namespace = "${var.ns_prefix}${var.harbor_namespace}", service = "harbor", port = 80, tls = "harbor-tls" }
     velero      = { host = "velero.${var.base_domain}", namespace = "${var.ns_prefix}velero", service = "velero", port = 8085, tls = "velero-tls" }
     gitea       = { host = "gitea.${var.base_domain}", namespace = "${var.ns_prefix}gitea", service = "gitea-http", port = 3000, tls = "gitea-tls" }
+    mattermost  = { host = "mattermost.${var.base_domain}", namespace = "${var.ns_prefix}mattermost", service = "mattermost-team-edition", port = 8065, tls = "mattermost-tls" }
     # qdrant lives in disabled/; its route would fail without the namespace:
     # qdrant    = { host = "qdrant.${var.base_domain}", namespace = "qdrant", service = "qdrant", port = 6333, tls = "qdrant-tls" }
     headlamp = { host = "headlamp.${var.base_domain}", namespace = "${var.ns_prefix}headlamp", service = "headlamp", port = 80, tls = "headlamp-tls" }
@@ -161,6 +162,7 @@ resource "kubectl_manifest" "httproute" {
     helm_release.velero,
     helm_release.headlamp,
     helm_release.gitea,
+    helm_release.mattermost,
   ]
 }
 

@@ -33,6 +33,12 @@ resource "helm_release" "gitea" {
           ROOT_URL   = "https://gitea.${var.base_domain}/"
           SSH_DOMAIN = local.ssh_external_host
         }
+        # push-to-create: a `git push` to a not-yet-existing repo creates it,
+        # so repos can be seeded over SSH without an API token first.
+        repository = {
+          ENABLE_PUSH_CREATE_USER = true
+          ENABLE_PUSH_CREATE_ORG  = true
+        }
         # No self-service signup: Gitea gates the aviary landing page's
         # cluster-admin actions, so accounts are admin-created only.
         service = {

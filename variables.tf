@@ -47,6 +47,25 @@ variable "gitea_admin_password" {
   sensitive   = true
 }
 
+variable "mattermost_db_password" {
+  description = "Password for the Mattermost Postgres (cnpg) app user."
+  type        = string
+  sensitive   = true
+}
+
+variable "kubewatch_mattermost_webhook" {
+  description = "Mattermost incoming-webhook URL kubewatch posts cluster events to."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "kubewatch_mattermost_channel" {
+  description = "Mattermost channel for kubewatch events (webhook's default if empty)."
+  type        = string
+  default     = "town-square"
+}
+
 variable "ssh_external_host" {
   description = "Hostname Gitea advertises for ssh clone URLs. Empty: ssh.gitea.<base_domain>."
   type        = string
