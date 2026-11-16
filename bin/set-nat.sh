@@ -26,8 +26,9 @@
 # rebuild their rules (service or network restart): run it again afterwards,
 # e.g. from a boot unit ordered after xdebbied.
 #
-# Values come from terraform.tfvars (TFVARS) when it is there, else the
-# environment -- the NAT box need not have the repo's tfvars:
+# Values come from the environment, else the file a previous run saved
+# (/etc/default/aviary-nat, so a bare `sudo set-nat.sh` works from then on),
+# else terraform.tfvars (TFVARS) -- the NAT box need not have the repo:
 #   NAT_GATEWAY_IP  the public Gateway's LB address        (tfvars nat_gateway_ip)
 #   PUBLIC_DOMAIN   resolved to find the public IP         (tfvars public_domain)
 #   PUBLIC_IP       the public IP itself; "none" skips the hairpin rules
@@ -37,7 +38,11 @@
 set -euo pipefail
 
 TFVARS=${TFVARS:-$(dirname "$0")/../terraform.tfvars}
-val() { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\"\{0,1\}\([^\"#]*\)\"\{0,1\}.*/\1/p" "$TFVARS" 2>/dev/null | head -1 | sed 's/[[:space:]]*$//'; }
+SAVED=/etc/default/aviary-nat
+# A tfvars value, or nothing (no tfvars here is fine: || true keeps set -e quiet).
+val() { { sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*\"\{0,1\}\([^\"#]*\)\"\{0,1\}.*/\1/p" "$TFVARS" 2>/dev/null || true; } | head -1 | sed 's/[[:space:]]*$//'; }
+# A value saved by an earlier run, or nothing.
+saved() { { sed -n "s/^$1=//p" "$SAVED" 2>/dev/null || true; } | head -1; }
 die() { echo "set-nat: $*" >&2; exit 1; }
 
 MODE=apply
@@ -52,8 +57,11 @@ export PATH=$PATH:/usr/sbin:/sbin
 TABLE=aviary_nat     # our own nft table: replaced wholesale on every run
 TAG=aviary-nat       # comment on the rules we add to other people's chains
 
-GW=${NAT_GATEWAY_IP:-$(val nat_gateway_ip)}
+GW=${NAT_GATEWAY_IP:-$(saved NAT_GATEWAY_IP)}
+GW=${GW:-$(val nat_gateway_ip)}
+PUBLIC_DOMAIN=${PUBLIC_DOMAIN:-$(saved PUBLIC_DOMAIN)}
 PUBLIC_DOMAIN=${PUBLIC_DOMAIN:-$(val public_domain)}
+PORTS=${PORTS:-$(saved PORTS)}
 PORTS=${PORTS:-80 443}
 NFT_PORTS="{ ${PORTS// /, } }"
 IPT_PORTS=${PORTS// /,}
@@ -91,7 +99,8 @@ if [ "$MODE" = delete ]; then
 fi
 
 # --- what to NAT -------------------------------------------------------------
-[ -n "$GW" ] || die "no gateway address: set NAT_GATEWAY_IP (or nat_gateway_ip in $TFVARS)"
+[ -n "$GW" ] || die "no gateway address. Give it once and it is remembered:
+    sudo NAT_GATEWAY_IP=<aviary-nat's address> PUBLIC_DOMAIN=<domain> $0"
 
 # The interface and connected subnet the Gateway is reached through.
 GW_DEV=$(ip -4 route get "$GW" | sed -n 's/.* dev \([^ ]*\).*/\1/p' | head -1)
@@ -174,4 +183,8 @@ if ipt_forward; then
     echo "set-nat: accepts added to iptables FORWARD"
 fi
 
-echo "set-nat: done. Check from outside: curl -sI http://aviary.${PUBLIC_DOMAIN:-<public_domain>}/"
+# Remember what was used, so the next run (after a reboot, or an xdebbied
+# restart) needs no arguments.
+printf 'NAT_GATEWAY_IP=%s\nPUBLIC_DOMAIN=%s\nPORTS=%s\n' "$GW" "$PUBLIC_DOMAIN" "$PORTS" > "$SAVED"
+
+echo "set-nat: done (settings saved in $SAVED). Check from outside: curl -sI http://aviary.${PUBLIC_DOMAIN:-<public_domain>}/"
