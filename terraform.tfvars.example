@@ -48,6 +48,7 @@ ssh_load_balancer_ip = "192.168.133.9"
 # https://drone.<base_domain>/login), then set id/secret below and re-apply.
 
 drone_rpc_secret            = "CHANGE_ME"
+# drone_admin_user          = "bmath"     # gitea login made Drone admin
 # drone_gitea_client_id     = ""
 # drone_gitea_client_secret = "CHANGE_ME"
 

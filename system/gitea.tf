@@ -66,6 +66,24 @@ resource "helm_release" "gitea" {
     ingress = {
       enabled = false
     }
+    # Webhooks go to https://drone.<base_domain>, whose cert is signed by the
+    # cluster's internal CA. Trust it via the trust-manager bundle (public CAs
+    # plus the XDebbie step-ca root), or deliveries fail with x509 errors.
+    deployment = {
+      env = [{
+        name  = "SSL_CERT_FILE"
+        value = "/etc/gitea-trust/ca-bundle.pem"
+      }]
+    }
+    extraVolumes = [{
+      name      = "xdebbie-trust"
+      configMap = { name = "xdebbie-ca-bundle" }
+    }]
+    extraContainerVolumeMounts = [{
+      name      = "xdebbie-trust"
+      mountPath = "/etc/gitea-trust"
+      readOnly  = true
+    }]
     # RWO volume: a RollingUpdate deadlocks (the new pod cannot attach the
     # PVC the old one still holds).
     strategy = {
@@ -87,6 +105,8 @@ resource "helm_release" "gitea" {
     }
   })]
 
+  # The pod mounts the bundle's ConfigMap and cannot start without it.
+  depends_on = [kubectl_manifest.ca_bundle]
 }
 
 # Exposure handled by the shared Envoy Gateway (gitea.<base_domain> -> gitea-http:3000).

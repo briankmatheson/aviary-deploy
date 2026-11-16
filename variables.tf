@@ -101,6 +101,12 @@ variable "drone_gitea_client_secret" {
   sensitive   = true
 }
 
+variable "drone_admin_user" {
+  description = "Gitea login that Drone creates as its admin on first start (needed to approve builds on protected repos and to manage secrets)."
+  type        = string
+  default     = "bmath"
+}
+
 variable "drone_rpc_secret" {
   description = "Shared secret between the Drone server and its runners."
   type        = string

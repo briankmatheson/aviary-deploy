@@ -7,7 +7,7 @@ resource "helm_release" "drone" {
 
   # Ingress disabled; routed via the shared Envoy Gateway (see envoy-gateway.tf).
   # The Gitea OAuth2 client comes from terraform.tfvars (two-phase install,
-  # see README). gitea lives in the data/ stack; apply data/ before apps/.
+  # see README). gitea lives in the system/ stack.
   values = [yamlencode({
     ingress          = { enabled = false }
     persistentVolume = { storageClass = var.global_storage_class }
@@ -20,10 +20,10 @@ resource "helm_release" "drone" {
       DRONE_GITEA_CLIENT_ID     = var.drone_gitea_client_id
       DRONE_GITEA_CLIENT_SECRET = var.drone_gitea_client_secret
       DRONE_RPC_SECRET          = var.drone_rpc_secret
-      DRONE_USER_CREATE         = "username:gitea_admin,machine:false,admin:true"
+      DRONE_USER_CREATE         = "username:${var.drone_admin_user},machine:false,admin:true"
       # Trust the cluster's internal CA (gitea's cert) via the trust-manager
       # bundle mounted below -- public CAs plus the XDebbie step-ca root.
-      SSL_CERT_FILE             = "/etc/ssl/certs/ca-bundle.pem"
+      SSL_CERT_FILE = "/etc/ssl/certs/ca-bundle.pem"
     }
     extraVolumes = [{
       name      = "ca-bundle"
@@ -155,8 +155,9 @@ spec:
         ports:
         - containerPort: 3000
         env:
+        # The server's Service, in the (prefixed) namespace the chart lands in.
         - name: DRONE_RPC_HOST
-          value: drone.drone:8080
+          value: drone.${var.ns_prefix}drone:8080
         - name: DRONE_RPC_PROTO
           value: http
         - name: DRONE_RPC_SECRET
