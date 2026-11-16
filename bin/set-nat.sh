@@ -16,12 +16,15 @@
 #      Connections that start on the gateway's own subnet are masqueraded, or
 #      the reply would go straight back and never be un-NATed.
 #   3. Forwarding  ip_forward on, and an accept for the forwarded traffic ahead
-#      of the rejects libvirt (NAT-mode network) and ufw put in its way.
+#      of whatever stands in its way: xdebbie's host firewall (which drops new
+#      flows into the mesh bridge from any other interface), libvirt's
+#      NAT-mode network (rejects them) and ufw (drops routed traffic).
 # Outside clients are not masqueraded, so the Gateway still sees their address;
 # that relies on this box being the cluster nodes' default route.
 #
-# Nothing here survives a reboot, and libvirt drops (3) when it rebuilds its
-# rules (network or libvirtd restart): run it again, e.g. from a boot unit.
+# Nothing here survives a reboot, and xdebbied and libvirt drop (3) when they
+# rebuild their rules (service or network restart): run it again afterwards,
+# e.g. from a boot unit ordered after xdebbied.
 #
 # Values come from terraform.tfvars (TFVARS) when it is there, else the
 # environment -- the NAT box need not have the repo's tfvars:
@@ -59,16 +62,20 @@ IPT_PORTS=${PORTS// /,}
 run() { if [ "$MODE" = print ]; then echo "+ $*"; else "$@"; fi; }
 
 # --- removal (also the first half of every install) --------------------------
-# Rules in libvirt's nft chain and in iptables FORWARD are found by their tag.
-libvirt_chain() { nft list chain ip libvirt_network guest_input >/dev/null 2>&1; }
+# Rules in other people's nft chains and in iptables FORWARD are found by their tag.
+# nft chains ("table chain") that turn away new flows into the bridge: xdebbied's
+# host firewall and libvirt's NAT-mode network.
+GUARD_CHAINS="xdebbie_host/forward libvirt_network/guest_input"
+have_chain() { nft list chain ip "${1%/*}" "${1#*/}" >/dev/null 2>&1; }
 ipt_forward() { command -v iptables >/dev/null && iptables -S FORWARD >/dev/null 2>&1; }
 
 remove() {
     nft list table ip $TABLE >/dev/null 2>&1 && run nft delete table ip $TABLE
-    if libvirt_chain; then
-        nft -a list chain ip libvirt_network guest_input | sed -n "s/.*comment \"$TAG\".*# handle \([0-9]*\)$/\1/p" |
-            while read -r h; do run nft delete rule ip libvirt_network guest_input handle "$h"; done
-    fi
+    for c in $GUARD_CHAINS; do
+        have_chain "$c" || continue
+        nft -a list chain ip "${c%/*}" "${c#*/}" | sed -n "s/.*comment \"$TAG\".*# handle \([0-9]*\)$/\1/p" |
+            while read -r h; do run nft delete rule ip "${c%/*}" "${c#*/}" handle "$h"; done
+    done
     if ipt_forward; then
         iptables -S FORWARD | sed -n "s/^-A \(.*--comment $TAG.*\)/\1/p" |
             while read -r rule; do eval "run iptables -D $rule"; done
@@ -132,7 +139,9 @@ echo "set-nat: tcp $PORTS on $(echo "$EXT_ADDRS $PUBLIC_IP" | xargs) -> $GW (via
 if [ "$MODE" = print ]; then
     echo "+ sysctl -w net.ipv4.ip_forward=1"
     echo "+ nft -f - <<EOF"; echo "$RULESET"; echo "EOF"
-    echo "+ (if libvirt's nft table exists) nft insert rule ip libvirt_network guest_input oifname $GW_DEV ip daddr $GW tcp dport $NFT_PORTS counter accept comment \"$TAG\""
+    for c in $GUARD_CHAINS; do
+        echo "+ (if it exists) nft insert rule ip ${c%/*} ${c#*/} oifname $GW_DEV ip daddr $GW tcp dport $NFT_PORTS counter accept comment \"$TAG\""
+    done
     echo "+ (if iptables FORWARD exists) iptables -I FORWARD 1 -o $GW_DEV -d $GW -p tcp -m multiport --dports $IPT_PORTS -m comment --comment $TAG -j ACCEPT"
     echo "+ (if iptables FORWARD exists) iptables -I FORWARD 1 -i $GW_DEV -s $GW -p tcp -m multiport --sports $IPT_PORTS -m comment --comment $TAG -j ACCEPT"
     exit 0
@@ -146,15 +155,17 @@ remove
 sysctl -q -w net.ipv4.ip_forward=1
 printf '%s\n' "$RULESET" | nft -f -
 
-# Let the forwarded traffic past the local firewalls. libvirt's NAT-mode
-# network rejects new connections into its bridge; ufw drops forwarding by
-# default. An accept in our own table would not override either, so the rule
-# goes at the head of their chains.
-if libvirt_chain; then
-    nft insert rule ip libvirt_network guest_input oifname "$GW_DEV" ip daddr "$GW" \
+# Let the forwarded traffic past the local firewalls. xdebbied drops, and
+# libvirt's NAT-mode network rejects, new connections into the bridge; ufw
+# drops forwarding by default. An accept in our own table would not override
+# any of them (a drop in any chain is final), so the rule goes at the head of
+# each of their chains.
+for c in $GUARD_CHAINS; do
+    have_chain "$c" || continue
+    nft insert rule ip "${c%/*}" "${c#*/}" oifname "$GW_DEV" ip daddr "$GW" \
         tcp dport "$NFT_PORTS" counter accept comment "\"$TAG\""
-    echo "set-nat: accept added to libvirt's guest_input chain"
-fi
+    echo "set-nat: accept added to nft chain ${c%/*} ${c#*/}"
+done
 if ipt_forward; then
     iptables -I FORWARD 1 -o "$GW_DEV" -d "$GW" -p tcp -m multiport --dports "$IPT_PORTS" \
         -m comment --comment $TAG -j ACCEPT
