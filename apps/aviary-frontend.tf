@@ -235,3 +235,85 @@ resource "kubernetes_secret" "aviary_frontend_oauth" {
     bypass_token   = var.aviary_bypass_token
   }
 }
+
+# The identity the chat room's model reads the cluster with. The page itself is
+# cluster-admin (above); the model's lookups (aviary-frontend's kubernetes_get
+# tool) are made with a token for this account instead, so read-only is
+# enforced by RBAC and not left to the model. No Secrets: `view` leaves them
+# out, and the extra role below does not add them.
+resource "kubernetes_service_account" "aviary_chat" {
+  metadata {
+    name      = "aviary-chat"
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "aviary_chat_view" {
+  metadata {
+    name = "aviary-chat-view"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "view"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.aviary_chat.metadata[0].name
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
+
+# What `view` leaves out that is still worth reading: cluster-scoped objects,
+# metrics, and the networking and certificate custom resources.
+resource "kubernetes_cluster_role" "aviary_chat_read" {
+  metadata {
+    name = "aviary-chat-read"
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["nodes", "namespaces", "persistentvolumes"]
+    verbs      = ["get", "list", "watch"]
+  }
+  rule {
+    api_groups = ["storage.k8s.io"]
+    resources  = ["storageclasses", "csinodes", "csidrivers", "volumeattachments"]
+    verbs      = ["get", "list", "watch"]
+  }
+  rule {
+    api_groups = ["metrics.k8s.io"]
+    resources  = ["nodes", "pods"]
+    verbs      = ["get", "list"]
+  }
+  rule {
+    api_groups = ["gateway.networking.k8s.io", "gateway.envoyproxy.io", "cilium.io"]
+    resources  = ["*"]
+    verbs      = ["get", "list", "watch"]
+  }
+  rule {
+    api_groups = ["cert-manager.io"]
+    resources  = ["certificates", "certificaterequests", "issuers", "clusterissuers"]
+    verbs      = ["get", "list", "watch"]
+  }
+  rule {
+    api_groups = ["apiextensions.k8s.io"]
+    resources  = ["customresourcedefinitions"]
+    verbs      = ["get", "list", "watch"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "aviary_chat_read" {
+  metadata {
+    name = "aviary-chat-read"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role.aviary_chat_read.metadata[0].name
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.aviary_chat.metadata[0].name
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
