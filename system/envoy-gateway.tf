@@ -18,20 +18,23 @@ locals {
 
   # host -> backend Service routing table. One HTTPS listener and one HTTPRoute
   # are generated per entry. `namespace`/`service`/`port` identify the backend.
+  # `group` is where the landing page lists the entry: "apps" (things people
+  # open to do work) on top, "system" (platform plumbing) below. It is stamped
+  # on the HTTPRoute as the aviary/group label, which aviary-frontend reads.
   vhosts = {
-    argo        = { host = "argo.${var.base_domain}", namespace = "${var.ns_prefix}argo", service = "argo-argocd-server", port = 80, tls = "argo-tls" }
-    aviary      = { host = var.base_domain, namespace = "aviary", service = "aviary-frontend", port = 8086, tls = "aviary-tls" }
-    bash        = { host = "bash.${var.base_domain}", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls" }
-    drone       = { host = "drone.${var.base_domain}", namespace = "${var.ns_prefix}drone", service = "drone", port = 8080, tls = "drone-tls" }
-    rustpad     = { host = "rustpad.${var.base_domain}", namespace = "${var.ns_prefix}${var.rustpad_namespace}", service = "rustpad", port = 3030, tls = "rustpad-tls" }
-    grafana     = { host = "grafana.${var.base_domain}", namespace = "${var.ns_prefix}${var.grafana_namespace}", service = "grafana", port = 80, tls = "grafana-tls" }
-    harbor      = { host = "harbor.${var.base_domain}", namespace = "${var.ns_prefix}${var.harbor_namespace}", service = "harbor", port = 80, tls = "harbor-tls" }
-    velero      = { host = "velero.${var.base_domain}", namespace = "${var.ns_prefix}velero", service = "velero", port = 8085, tls = "velero-tls" }
-    gitea       = { host = "gitea.${var.base_domain}", namespace = "${var.ns_prefix}gitea", service = "gitea-http", port = 3000, tls = "gitea-tls" }
-    mattermost  = { host = "mattermost.${var.base_domain}", namespace = "${var.ns_prefix}mattermost", service = "mattermost-team-edition", port = 8065, tls = "mattermost-tls" }
+    argo       = { host = "argo.${var.base_domain}", namespace = "${var.ns_prefix}argo", service = "argo-argocd-server", port = 80, tls = "argo-tls", group = "apps" }
+    aviary     = { host = var.base_domain, namespace = "aviary", service = "aviary-frontend", port = 8086, tls = "aviary-tls", group = "apps" }
+    bash       = { host = "bash.${var.base_domain}", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls", group = "apps" }
+    drone      = { host = "drone.${var.base_domain}", namespace = "${var.ns_prefix}drone", service = "drone", port = 8080, tls = "drone-tls", group = "apps" }
+    rustpad    = { host = "rustpad.${var.base_domain}", namespace = "${var.ns_prefix}${var.rustpad_namespace}", service = "rustpad", port = 3030, tls = "rustpad-tls", group = "apps" }
+    grafana    = { host = "grafana.${var.base_domain}", namespace = "${var.ns_prefix}${var.grafana_namespace}", service = "grafana", port = 80, tls = "grafana-tls", group = "system" }
+    harbor     = { host = "harbor.${var.base_domain}", namespace = "${var.ns_prefix}${var.harbor_namespace}", service = "harbor", port = 80, tls = "harbor-tls", group = "apps" }
+    velero     = { host = "velero.${var.base_domain}", namespace = "${var.ns_prefix}velero", service = "velero", port = 8085, tls = "velero-tls", group = "system" }
+    gitea      = { host = "gitea.${var.base_domain}", namespace = "${var.ns_prefix}gitea", service = "gitea-http", port = 3000, tls = "gitea-tls", group = "apps" }
+    mattermost = { host = "mattermost.${var.base_domain}", namespace = "${var.ns_prefix}mattermost", service = "mattermost-team-edition", port = 8065, tls = "mattermost-tls", group = "apps" }
     # qdrant lives in disabled/; its route would fail without the namespace:
-    # qdrant    = { host = "qdrant.${var.base_domain}", namespace = "qdrant", service = "qdrant", port = 6333, tls = "qdrant-tls" }
-    headlamp = { host = "headlamp.${var.base_domain}", namespace = "${var.ns_prefix}headlamp", service = "headlamp", port = 80, tls = "headlamp-tls" }
+    # qdrant    = { host = "qdrant.${var.base_domain}", namespace = "qdrant", service = "qdrant", port = 6333, tls = "qdrant-tls", group = "apps" }
+    headlamp = { host = "headlamp.${var.base_domain}", namespace = "${var.ns_prefix}headlamp", service = "headlamp", port = 80, tls = "headlamp-tls", group = "system" }
   }
 
   # Per-host HTTPS listeners, rendered with explicit absolute indentation so the
@@ -139,6 +142,8 @@ resource "kubectl_manifest" "httproute" {
     metadata:
       name: ${each.key}
       namespace: ${each.value.namespace}
+      labels:
+        aviary/group: ${each.value.group}
     spec:
       parentRefs:
         - name: aviary
