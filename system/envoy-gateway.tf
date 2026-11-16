@@ -260,6 +260,13 @@ resource "kubectl_manifest" "httproute" {
         - backendRefs:
             - name: ${each.value.service}
               port: ${each.value.port}
+    %{if each.key == "aviary"}
+          # The landing page's chat window streams model replies, and the first
+          # one after a cold start waits for the model to load onto the GPU:
+          # well past Envoy's 15s default.
+          timeouts:
+            request: 300s
+    %{endif}
   EOF
 
   # Every route starts on the private Gateway only. Going public is a decision
