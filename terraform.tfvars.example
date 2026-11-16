@@ -111,6 +111,7 @@ CREDS
 # axigen_cluster_key    = ""
 # axigen_admin_password = ""
 # axigen_mail_domain    = ""            # default: base_domain
+# smtp_load_balancer_ip = "192.168.133.11"   # SMTP 25/465/587 on its own LB address; NATed by bin/set-nat.sh
 # axigen_timezone       = "America/New_York"
 # axigen_storage_size   = "10Gi"
 

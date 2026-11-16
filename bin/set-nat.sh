@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# NAT the outside world to the public Gateway (aviary-nat, nat_gateway_ip).
+# NAT the outside world to the public Gateway (aviary-nat, nat_gateway_ip) and,
+# when SMTP_IP is given, mail to the cluster's SMTP load balancer.
 #
 # Run this as root ON THE BOX THE ROUTER SENDS INBOUND TRAFFIC TO (its DMZ or
 # port-forward host), which must also route to the cluster's LB network:
@@ -8,8 +9,9 @@
 #   bin/set-nat.sh -n          # print what would be done, change nothing
 #   sudo bin/set-nat.sh -d     # remove everything it installed
 #
-# What it sets up, for tcp 80 and 443:
-#   1. DNAT   traffic addressed to this box's LAN address(es) -> nat_gateway_ip.
+# What it sets up -- for tcp 80 and 443 to the Gateway, and for SMTP (25 plain
+# with STARTTLS, 465 implicit TLS, 587 submission) to SMTP_IP:
+#   1. DNAT   traffic addressed to this box's LAN address(es) -> the destination.
 #   2. Hairpin  the same for the public IP, so the public names also work from
 #      this box and from the cluster behind it (cert-manager checks every
 #      Let's Encrypt HTTP-01 challenge from inside before asking for it).
@@ -35,6 +37,10 @@
 #   EXT_ADDRS       this box's LAN address(es), space separated
 #                   (default: every address it has on the default route's subnet)
 #   PORTS           default "80 443"
+#   SMTP_IP         the mail LoadBalancer's address (the axigen-mail-smtp-public
+#                   Service, tfvars smtp_load_balancer_ip); unset = no mail
+#                   forwarding; "none" forgets a saved one
+#   SMTP_PORTS      default "25 465 587"
 set -euo pipefail
 
 TFVARS=${TFVARS:-$(dirname "$0")/../terraform.tfvars}
@@ -63,8 +69,11 @@ PUBLIC_DOMAIN=${PUBLIC_DOMAIN:-$(saved PUBLIC_DOMAIN)}
 PUBLIC_DOMAIN=${PUBLIC_DOMAIN:-$(val public_domain)}
 PORTS=${PORTS:-$(saved PORTS)}
 PORTS=${PORTS:-80 443}
-NFT_PORTS="{ ${PORTS// /, } }"
-IPT_PORTS=${PORTS// /,}
+SMTP_IP=${SMTP_IP:-$(saved SMTP_IP)}
+SMTP_IP=${SMTP_IP:-$(val smtp_load_balancer_ip)}
+[ "$SMTP_IP" != none ] || SMTP_IP=""
+SMTP_PORTS=${SMTP_PORTS:-$(saved SMTP_PORTS)}
+SMTP_PORTS=${SMTP_PORTS:-25 465 587}
 
 # run CMD...: do it, or in -n mode just show it.
 run() { if [ "$MODE" = print ]; then echo "+ $*"; else "$@"; fi; }
@@ -102,9 +111,14 @@ fi
 [ -n "$GW" ] || die "no gateway address. Give it once and it is remembered:
     sudo NAT_GATEWAY_IP=<aviary-nat's address> PUBLIC_DOMAIN=<domain> $0"
 
-# The interface and connected subnet the Gateway is reached through.
-GW_DEV=$(ip -4 route get "$GW" | sed -n 's/.* dev \([^ ]*\).*/\1/p' | head -1)
-ip -4 route get "$GW" | grep -q " via " && die "$GW is not on a network this box is attached to"
+# What goes where: one "address ports..." line per destination.
+TARGETS="$GW $PORTS"
+[ -z "$SMTP_IP" ] || TARGETS="$TARGETS
+$SMTP_IP $SMTP_PORTS"
+
+# The interface and connected subnet the destinations are reached through.
+dev_of() { ip -4 route get "$1" | sed -n 's/.* dev \([^ ]*\).*/\1/p' | head -1; }
+GW_DEV=$(dev_of "$GW")
 GW_NET=$(ip -4 -o route show dev "$GW_DEV" scope link | awk '{print $1; exit}')
 [ -n "$GW_DEV" ] && [ -n "$GW_NET" ] || die "cannot find the network $GW is on"
 
@@ -126,33 +140,52 @@ case "${PUBLIC_IP:-}" in
     "" | none) PUBLIC_IP="" ; echo "set-nat: no public IP (set PUBLIC_IP): skipping the hairpin rules" >&2 ;;
 esac
 
-DADDRS="{ $(echo "$EXT_ADDRS $PUBLIC_IP" | xargs | sed 's/ /, /g') }"
+nftset() { echo "{ $(echo "$*" | xargs | sed 's/ /, /g') }"; }   # 80 443 -> { 80, 443 }
+iptset() { echo "$*" | xargs | sed 's/ /,/g'; }                  # 80 443 -> 80,443
+DADDRS=$(nftset $EXT_ADDRS $PUBLIC_IP)
+
+PRE="" OUT="" POST=""
+while read -r ip ports; do
+    [ -n "$ip" ] || continue
+    ip -4 route get "$ip" | grep -q " via " && die "$ip is not on a network this box is attached to"
+    [ "$(dev_of "$ip")" = "$GW_DEV" ] || die "$ip is not on the same network as $GW ($GW_DEV)"
+    p=$(nftset $ports)
+    PRE="$PRE        ip daddr $DADDRS tcp dport $p dnat to $ip
+"
+    [ -z "$PUBLIC_IP" ] || OUT="$OUT        ip daddr $PUBLIC_IP tcp dport $p dnat to $ip
+"
+    POST="$POST        ip saddr $GW_NET ip daddr $ip tcp dport $p ct status dnat masquerade
+"
+    echo "set-nat: tcp $ports on $(echo "$EXT_ADDRS $PUBLIC_IP" | xargs) -> $ip (via $GW_DEV, $GW_NET)"
+done <<EOF
+$TARGETS
+EOF
 
 RULESET="table ip $TABLE {
     chain prerouting {
         type nat hook prerouting priority -105;
-        ip daddr $DADDRS tcp dport $NFT_PORTS dnat to $GW
-    }
+$PRE    }
     chain output {
         type nat hook output priority -105;
-        ${PUBLIC_IP:+ip daddr $PUBLIC_IP tcp dport $NFT_PORTS dnat to $GW}
-    }
+$OUT    }
     chain postrouting {
         type nat hook postrouting priority 95;
-        ip saddr $GW_NET ip daddr $GW tcp dport $NFT_PORTS ct status dnat masquerade
-    }
+$POST    }
 }"
-
-echo "set-nat: tcp $PORTS on $(echo "$EXT_ADDRS $PUBLIC_IP" | xargs) -> $GW (via $GW_DEV, $GW_NET)"
 
 if [ "$MODE" = print ]; then
     echo "+ sysctl -w net.ipv4.ip_forward=1"
     echo "+ nft -f - <<EOF"; echo "$RULESET"; echo "EOF"
-    for c in $GUARD_CHAINS; do
-        echo "+ (if it exists) nft insert rule ip ${c%/*} ${c#*/} oifname $GW_DEV ip daddr $GW tcp dport $NFT_PORTS counter accept comment \"$TAG\""
-    done
-    echo "+ (if iptables FORWARD exists) iptables -I FORWARD 1 -o $GW_DEV -d $GW -p tcp -m multiport --dports $IPT_PORTS -m comment --comment $TAG -j ACCEPT"
-    echo "+ (if iptables FORWARD exists) iptables -I FORWARD 1 -i $GW_DEV -s $GW -p tcp -m multiport --sports $IPT_PORTS -m comment --comment $TAG -j ACCEPT"
+    while read -r ip ports; do
+        [ -n "$ip" ] || continue
+        for c in $GUARD_CHAINS; do
+            echo "+ (if it exists) nft insert rule ip ${c%/*} ${c#*/} oifname $GW_DEV ip daddr $ip tcp dport $(nftset $ports) counter accept comment \"$TAG\""
+        done
+        echo "+ (if iptables FORWARD exists) iptables -I FORWARD 1 -o $GW_DEV -d $ip -p tcp -m multiport --dports $(iptset $ports) -m comment --comment $TAG -j ACCEPT"
+        echo "+ (if iptables FORWARD exists) iptables -I FORWARD 1 -i $GW_DEV -s $ip -p tcp -m multiport --sports $(iptset $ports) -m comment --comment $TAG -j ACCEPT"
+    done <<EOF
+$TARGETS
+EOF
     exit 0
 fi
 
@@ -169,22 +202,28 @@ printf '%s\n' "$RULESET" | nft -f -
 # drops forwarding by default. An accept in our own table would not override
 # any of them (a drop in any chain is final), so the rule goes at the head of
 # each of their chains.
-for c in $GUARD_CHAINS; do
-    have_chain "$c" || continue
-    nft insert rule ip "${c%/*}" "${c#*/}" oifname "$GW_DEV" ip daddr "$GW" \
-        tcp dport "$NFT_PORTS" counter accept comment "\"$TAG\""
-    echo "set-nat: accept added to nft chain ${c%/*} ${c#*/}"
-done
-if ipt_forward; then
-    iptables -I FORWARD 1 -o "$GW_DEV" -d "$GW" -p tcp -m multiport --dports "$IPT_PORTS" \
-        -m comment --comment $TAG -j ACCEPT
-    iptables -I FORWARD 1 -i "$GW_DEV" -s "$GW" -p tcp -m multiport --sports "$IPT_PORTS" \
-        -m comment --comment $TAG -j ACCEPT
-    echo "set-nat: accepts added to iptables FORWARD"
-fi
+while read -r ip ports; do
+    [ -n "$ip" ] || continue
+    for c in $GUARD_CHAINS; do
+        have_chain "$c" || continue
+        nft insert rule ip "${c%/*}" "${c#*/}" oifname "$GW_DEV" ip daddr "$ip" \
+            tcp dport "$(nftset $ports)" counter accept comment "\"$TAG\""
+        echo "set-nat: accept for $ip added to nft chain ${c%/*} ${c#*/}"
+    done
+    if ipt_forward; then
+        iptables -I FORWARD 1 -o "$GW_DEV" -d "$ip" -p tcp -m multiport --dports "$(iptset $ports)" \
+            -m comment --comment $TAG -j ACCEPT
+        iptables -I FORWARD 1 -i "$GW_DEV" -s "$ip" -p tcp -m multiport --sports "$(iptset $ports)" \
+            -m comment --comment $TAG -j ACCEPT
+        echo "set-nat: accepts for $ip added to iptables FORWARD"
+    fi
+done <<EOF
+$TARGETS
+EOF
 
 # Remember what was used, so the next run (after a reboot, or an xdebbied
 # restart) needs no arguments.
-printf 'NAT_GATEWAY_IP=%s\nPUBLIC_DOMAIN=%s\nPORTS=%s\n' "$GW" "$PUBLIC_DOMAIN" "$PORTS" > "$SAVED"
+printf 'NAT_GATEWAY_IP=%s\nPUBLIC_DOMAIN=%s\nPORTS=%s\nSMTP_IP=%s\nSMTP_PORTS=%s\n' \
+    "$GW" "$PUBLIC_DOMAIN" "$PORTS" "$SMTP_IP" "$SMTP_PORTS" > "$SAVED"
 
 echo "set-nat: done (settings saved in $SAVED). Check from outside: curl -sI http://aviary.${PUBLIC_DOMAIN:-<public_domain>}/"

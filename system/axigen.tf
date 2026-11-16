@@ -130,3 +130,40 @@ resource "helm_release" "axigen" {
     kubernetes_role_binding.axiclumgr,
   ]
 }
+
+# Mail from outside: one LoadBalancer address for the SMTP front end, instead
+# of network.serviceType = LoadBalancer (which would publish every protocol).
+# 25 = SMTP (plain, STARTTLS offered), 465 = SMTP over TLS, 587 = submission.
+# externalTrafficPolicy Local keeps the sender's address, which Axigen's
+# anti-spam and relay rules go by. bin/set-nat.sh forwards to it (SMTP_IP).
+resource "kubernetes_service" "axigen_smtp_public" {
+  count = local.axigen_enabled && var.smtp_load_balancer_ip != "" ? 1 : 0
+  metadata {
+    name      = "axigen-mail-smtp-public"
+    namespace = kubernetes_namespace.axigen[0].metadata[0].name
+    annotations = {
+      "lbipam.cilium.io/ips" = var.smtp_load_balancer_ip
+    }
+  }
+  spec {
+    type                    = "LoadBalancer"
+    external_traffic_policy = "Local"
+    selector                = { app = "axigen-mail-fe" }
+    port {
+      name        = "smtp"
+      port        = 25
+      target_port = 25
+    }
+    port {
+      name        = "smtps"
+      port        = 465
+      target_port = 465
+    }
+    port {
+      name        = "submission"
+      port        = 587
+      target_port = 587
+    }
+  }
+  depends_on = [helm_release.axigen]
+}

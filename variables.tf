@@ -81,6 +81,12 @@ variable "axigen_admin_password" {
   default     = ""
 }
 
+variable "smtp_load_balancer_ip" {
+  description = "LoadBalancer IP (from the cluster's LB pool) for Axigen's SMTP front end: ports 25, 465 and 587. bin/set-nat.sh forwards outside mail to it. Empty: SMTP stays in-cluster."
+  type        = string
+  default     = ""
+}
+
 variable "axigen_timezone" {
   description = "Default time zone for new Axigen accounts."
   type        = string
