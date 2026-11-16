@@ -21,7 +21,20 @@ resource "helm_release" "drone" {
       DRONE_GITEA_CLIENT_SECRET = var.drone_gitea_client_secret
       DRONE_RPC_SECRET          = var.drone_rpc_secret
       DRONE_USER_CREATE         = "username:gitea_admin,machine:false,admin:true"
+      # Trust the cluster's internal CA (gitea's cert) via the trust-manager
+      # bundle mounted below -- public CAs plus the XDebbie step-ca root.
+      SSL_CERT_FILE             = "/etc/ssl/certs/ca-bundle.pem"
     }
+    extraVolumes = [{
+      name      = "ca-bundle"
+      configMap = { name = "xdebbie-ca-bundle" }
+    }]
+    extraVolumeMounts = [{
+      name      = "ca-bundle"
+      mountPath = "/etc/ssl/certs/ca-bundle.pem"
+      subPath   = "ca-bundle.pem"
+      readOnly  = true
+    }]
   })]
 }
 resource "kubectl_manifest" "gitea" {
