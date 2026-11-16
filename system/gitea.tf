@@ -45,6 +45,15 @@ resource "helm_release" "gitea" {
           DISABLE_REGISTRATION     = true
           SHOW_REGISTRATION_BUTTON = false
         }
+        # Webhook delivery targets (e.g. Drone) live on the private mesh, which
+        # gitea's anti-SSRF guard blocks by default ("webhook can only call
+        # allowed HTTP servers"). Allow private ranges so push events reach CI.
+        webhook = {
+          # Scope webhook delivery to the mesh range only. Drone and every other
+          # in-mesh webhook target live in 10.23.0.0/16; tighter than the broad
+          # RFC1918 "private" set.
+          ALLOWED_HOST_LIST = "10.23.0.0/16"
+        }
       }
     }
     service = {
