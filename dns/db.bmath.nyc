@@ -1,0 +1,20 @@
+; bmath.nyc -- served by the aviary-dns CoreDNS (system/dns.tf).
+; Bump the serial on every change: CoreDNS reloads a zone only when it moves.
+$ORIGIN bmath.nyc.
+$TTL 300
+@       3600 IN SOA ns1.bmath.nyc. hostmaster.bmath.nyc. (
+                2026111601 ; serial (YYYYMMDDnn)
+                7200       ; refresh
+                900        ; retry
+                1209600    ; expire
+                300 )      ; negative-answer TTL
+@       3600 IN NS  ns1.bmath.nyc.
+@       3600 IN NS  ns2.bmath.nyc.
+ns1          IN A   96.224.10.89
+ns2          IN A   96.224.10.89
+
+; Mail: Axigen, through the NAT on the public address.
+@            IN MX  10 mail.bmath.nyc.
+
+; Everything else is an app behind the public gateway.
+*            IN A   96.224.10.89

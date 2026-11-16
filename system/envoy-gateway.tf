@@ -131,6 +131,7 @@ spec:
         namespaces:
           from: All
 ${local.gw_https_listeners.private}
+${local.gw_dns_listeners}
 EOF
   depends_on = [
     kubectl_manifest.gatewayclass,
@@ -172,6 +173,7 @@ spec:
         namespaces:
           from: All
 ${local.gw_https_listeners.public}
+${local.gw_dns_listeners}
 EOF
   depends_on = [
     kubectl_manifest.gateway,

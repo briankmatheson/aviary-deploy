@@ -210,6 +210,30 @@ variable "cnpg_namespace" {
 
 # --- Rustpad ---
 
+variable "dns_zones" {
+  description = "Zones the aviary-dns CoreDNS is authoritative for: zone name => path of its zone file (e.g. ../dns/db.example.org). Empty: no DNS server."
+  type        = map(string)
+  default     = {}
+}
+
+variable "dns_replicas" {
+  description = "CoreDNS replicas for dns_zones."
+  type        = number
+  default     = 3
+}
+
+variable "dns_memory" {
+  description = "Memory request and limit of each dns_zones CoreDNS pod."
+  type        = string
+  default     = "512Mi"
+}
+
+variable "dns_image" {
+  description = "CoreDNS image for dns_zones."
+  type        = string
+  default     = "registry.k8s.io/coredns/coredns:v1.14.6"
+}
+
 variable "jitsi_enabled" {
   description = "Deploy Jitsi Meet. Also needs jitsi_jvb_load_balancer_ip."
   type        = bool

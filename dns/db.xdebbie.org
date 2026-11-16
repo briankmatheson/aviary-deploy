@@ -1,0 +1,20 @@
+; xdebbie.org -- served by the aviary-dns CoreDNS (system/dns.tf).
+; Bump the serial on every change: CoreDNS reloads a zone only when it moves.
+$ORIGIN xdebbie.org.
+$TTL 300
+@       3600 IN SOA ns1.xdebbie.org. hostmaster.xdebbie.org. (
+                2026111601 ; serial (YYYYMMDDnn)
+                7200       ; refresh
+                900        ; retry
+                1209600    ; expire
+                300 )      ; negative-answer TTL
+@       3600 IN NS  ns1.xdebbie.org.
+@       3600 IN NS  ns2.xdebbie.org.
+ns1          IN A   96.224.10.89
+ns2          IN A   96.224.10.89
+
+; Mail: Axigen, through the NAT on the public address.
+@            IN MX  10 mail.xdebbie.org.
+
+; Everything else is an app behind the public gateway.
+*            IN A   96.224.10.89

@@ -83,6 +83,12 @@ cloudbeaver_admin_password = "CHANGE_ME"
 
 # ================================ Rustpad ================================
 
+# Authoritative DNS (CoreDNS in <ns_prefix>dns) for whole domains, behind the
+# landing page's private/public switches. Paths are relative to the stack dir.
+# dns_zones = {
+#   "example.org" = "../dns/db.example.org"
+# }
+
 # Jitsi Meet. Media is UDP 10000 to the video bridge's own LB address.
 # jitsi_enabled              = true
 # jitsi_jvb_load_balancer_ip = "192.168.133.12"

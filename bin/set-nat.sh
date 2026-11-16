@@ -12,7 +12,10 @@
 #
 # What it sets up -- for tcp 80 and 443 to the Gateway, and for SMTP (25 plain
 # with STARTTLS, 465 implicit TLS, 587 submission) to SMTP_IP, and for Jitsi
-# media (udp 10000) to JVB_IP:
+# media (udp 10000) to JVB_IP. DNS (tcp and udp 53) goes to the Gateway too,
+# for the aviary-dns server behind its public switch -- but only from outside:
+# queries from this box's own LAN and from the mesh to its LAN address are left
+# for the DNS server running here:
 #   1. DNAT   traffic addressed to this box's LAN address(es) -> the destination.
 #   2. Hairpin  the same for the public IP, so the public names also work from
 #      this box and from the cluster behind it (cert-manager checks every
@@ -46,6 +49,7 @@
 #   JVB_IP          the Jitsi video bridge's LoadBalancer address (tfvars
 #                   jitsi_jvb_load_balancer_ip); unset = none; "none" forgets it
 #   JVB_PORTS       udp, default "10000"
+#   DNS_PORTS       tcp and udp to the Gateway, default "53"; "none" = no DNS
 set -euo pipefail
 
 TFVARS=${TFVARS:-$(dirname "$0")/../terraform.tfvars}
@@ -84,6 +88,9 @@ JVB_IP=${JVB_IP:-$(val jitsi_jvb_load_balancer_ip)}
 [ "$JVB_IP" != none ] || JVB_IP=""
 JVB_PORTS=${JVB_PORTS:-$(saved JVB_PORTS)}
 JVB_PORTS=${JVB_PORTS:-10000}
+DNS_PORTS=${DNS_PORTS:-$(saved DNS_PORTS)}
+DNS_PORTS=${DNS_PORTS:-53}
+[ "$DNS_PORTS" != none ] || DNS_PORTS=""
 
 # run CMD...: do it, or in -n mode just show it.
 run() { if [ "$MODE" = print ]; then echo "+ $*"; else "$@"; fi; }
@@ -121,8 +128,13 @@ fi
 [ -n "$GW" ] || die "no gateway address. Give it once and it is remembered:
     sudo NAT_GATEWAY_IP=<aviary-nat's address> PUBLIC_DOMAIN=<domain> $0"
 
-# What goes where: one "protocol address ports..." line per destination.
+# What goes where: one "protocol address ports..." line per destination. A
+# protocol ending in "-outside" is only forwarded for clients beyond this box's
+# own networks when addressed to its LAN address.
 TARGETS="tcp $GW $PORTS"
+[ -z "$DNS_PORTS" ] || TARGETS="$TARGETS
+tcp-outside $GW $DNS_PORTS
+udp-outside $GW $DNS_PORTS"
 [ -z "$SMTP_IP" ] || TARGETS="$TARGETS
 tcp $SMTP_IP $SMTP_PORTS"
 [ -z "$JVB_IP" ] || TARGETS="$TARGETS
@@ -155,6 +167,11 @@ esac
 nftset() { echo "{ $(echo "$*" | xargs | sed 's/ /, /g') }"; }   # 80 443 -> { 80, 443 }
 iptset() { echo "$*" | xargs | sed 's/ /,/g'; }                  # 80 443 -> 80,443
 DADDRS=$(nftset $EXT_ADDRS $PUBLIC_IP)
+# This box's own networks: the LAN its EXT_ADDRS are on, and the Gateway's.
+LOCAL_NETS=$(nftset $(for a in $EXT_ADDRS; do
+    d=$(ip -4 -o addr show | awk -v a="$a" 'index($4, a "/") == 1 {print $2; exit}')
+    [ -z "$d" ] || ip -4 -o route show dev "$d" scope link | awk '{print $1}'
+done | sort -u) $GW_NET)
 
 PRE="" OUT="" POST=""
 while read -r proto ip ports; do
@@ -162,8 +179,19 @@ while read -r proto ip ports; do
     ip -4 route get "$ip" | grep -q " via " && die "$ip is not on a network this box is attached to"
     [ "$(dev_of "$ip")" = "$GW_DEV" ] || die "$ip is not on the same network as $GW ($GW_DEV)"
     p=$(nftset $ports)
-    PRE="$PRE        ip daddr $DADDRS $proto dport $p dnat to $ip
+    case $proto in
+        *-outside)
+            proto=${proto%-outside}
+            PRE="$PRE        ip daddr $(nftset $EXT_ADDRS) ip saddr != $LOCAL_NETS $proto dport $p dnat to $ip
 "
+            [ -z "$PUBLIC_IP" ] || PRE="$PRE        ip daddr $PUBLIC_IP $proto dport $p dnat to $ip
+"
+            ;;
+        *)
+            PRE="$PRE        ip daddr $DADDRS $proto dport $p dnat to $ip
+"
+            ;;
+    esac
     [ -z "$PUBLIC_IP" ] || OUT="$OUT        ip daddr $PUBLIC_IP $proto dport $p dnat to $ip
 "
     POST="$POST        ip saddr $GW_NET ip daddr $ip $proto dport $p ct status dnat masquerade
@@ -190,6 +218,7 @@ if [ "$MODE" = print ]; then
     echo "+ nft -f - <<EOF"; echo "$RULESET"; echo "EOF"
     while read -r proto ip ports; do
         [ -n "$ip" ] || continue
+        proto=${proto%-outside}
         for c in $GUARD_CHAINS; do
             echo "+ (if it exists) nft insert rule ip ${c%/*} ${c#*/} oifname $GW_DEV ip daddr $ip $proto dport $(nftset $ports) counter accept comment \"$TAG\""
         done
@@ -216,6 +245,7 @@ printf '%s\n' "$RULESET" | nft -f -
 # each of their chains.
 while read -r proto ip ports; do
     [ -n "$ip" ] || continue
+    proto=${proto%-outside}
     for c in $GUARD_CHAINS; do
         have_chain "$c" || continue
         nft insert rule ip "${c%/*}" "${c#*/}" oifname "$GW_DEV" ip daddr "$ip" \
@@ -235,7 +265,7 @@ EOF
 
 # Remember what was used, so the next run (after a reboot, or an xdebbied
 # restart) needs no arguments.
-printf 'NAT_GATEWAY_IP=%s\nPUBLIC_DOMAIN=%s\nPORTS=%s\nSMTP_IP=%s\nSMTP_PORTS=%s\nJVB_IP=%s\nJVB_PORTS=%s\n' \
-    "$GW" "$PUBLIC_DOMAIN" "$PORTS" "$SMTP_IP" "$SMTP_PORTS" "$JVB_IP" "$JVB_PORTS" > "$SAVED"
+printf 'NAT_GATEWAY_IP=%s\nPUBLIC_DOMAIN=%s\nPORTS=%s\nSMTP_IP=%s\nSMTP_PORTS=%s\nJVB_IP=%s\nJVB_PORTS=%s\nDNS_PORTS=%s\n' \
+    "$GW" "$PUBLIC_DOMAIN" "$PORTS" "$SMTP_IP" "$SMTP_PORTS" "$JVB_IP" "$JVB_PORTS" "${DNS_PORTS:-none}" > "$SAVED"
 
 echo "set-nat: done (settings saved in $SAVED). Check from outside: curl -sI http://aviary.${PUBLIC_DOMAIN:-<public_domain>}/"
