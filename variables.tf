@@ -87,6 +87,13 @@ variable "smtp_load_balancer_ip" {
   default     = ""
 }
 
+variable "axigen_postmaster_password" {
+  description = "Record of the postmaster password set by hand in Axigen (the chart derives the initial one from the admin password). Not applied by the stack."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "axigen_timezone" {
   description = "Default time zone for new Axigen accounts."
   type        = string
@@ -202,6 +209,36 @@ variable "cnpg_namespace" {
 }
 
 # --- Rustpad ---
+
+variable "jitsi_enabled" {
+  description = "Deploy Jitsi Meet. Also needs jitsi_jvb_load_balancer_ip."
+  type        = bool
+  default     = false
+}
+
+variable "jitsi_chart_version" {
+  description = "jitsi-meet Helm chart version."
+  type        = string
+  default     = "3.12.0"
+}
+
+variable "jitsi_jvb_load_balancer_ip" {
+  description = "LoadBalancer IP (from the cluster's LB pool) for the Jitsi video bridge: UDP 10000. bin/set-nat.sh forwards outside media to it."
+  type        = string
+  default     = ""
+}
+
+variable "jitsi_public_ip" {
+  description = "Public IP outside callers reach the video bridge on (the router's WAN address). Empty: Jitsi only works for callers that can reach the LoadBalancer IP."
+  type        = string
+  default     = ""
+}
+
+variable "jitsi_timezone" {
+  description = "Time zone for the Jitsi containers."
+  type        = string
+  default     = "America/New_York"
+}
 
 variable "rustpad_namespace" {
   description = "Namespace for Rustpad."

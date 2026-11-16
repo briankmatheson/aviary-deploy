@@ -41,7 +41,10 @@ locals {
   # `group` is where the landing page lists the entry: "apps" (things people
   # open to do work) on top, "system" (platform plumbing) below. It is stamped
   # on the HTTPRoute as the aviary/group label, which aviary-frontend reads.
-  vhosts = merge(local.axigen_vhost, {
+  jitsi_vhost = var.jitsi_enabled && var.jitsi_jvb_load_balancer_ip != "" ? {
+    jitsi = { host = "jitsi.${var.base_domain}", namespace = "${var.ns_prefix}jitsi", service = "jitsi-jitsi-meet-web", port = 8000, tls = "jitsi-tls", group = "apps" }
+  } : {}
+  vhosts = merge(local.axigen_vhost, local.jitsi_vhost, {
     argo       = { host = "argo.${var.base_domain}", namespace = "${var.ns_prefix}argo", service = "argo-argocd-server", port = 80, tls = "argo-tls", group = "apps" }
     aviary     = { host = var.base_domain, namespace = "aviary", service = "aviary-frontend", port = 8086, tls = "aviary-tls", group = "apps" }
     bash       = { host = "bash.${var.base_domain}", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls", group = "apps" }

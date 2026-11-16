@@ -83,6 +83,11 @@ cloudbeaver_admin_password = "CHANGE_ME"
 
 # ================================ Rustpad ================================
 
+# Jitsi Meet. Media is UDP 10000 to the video bridge's own LB address.
+# jitsi_enabled              = true
+# jitsi_jvb_load_balancer_ip = "192.168.133.12"
+# jitsi_public_ip            = "203.0.113.7"   # WAN address, for callers outside; NAT with bin/set-nat.sh
+
 # rustpad_namespace = "rustpad"
 # rustpad_pvc_size  = 4
 
