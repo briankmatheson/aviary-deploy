@@ -18,6 +18,7 @@ Terraform/OpenTofu configuration is grouped by role:
   - `rustpad` — collaborative text editor (`rustpad.<base_domain>`)
 - `system/` — cluster services
   - `envoy-gateway` — Gateway API ingress; the shared `aviary` Gateway that fronts every app
+  - `axigen` — Axigen mail server via AxiHelm (WebMail at `mail.<base_domain>`); off until `axigen_license_file` is set
   - `headlamp` — cluster UI (`headlamp.<base_domain>`)
   - `grafana` — dashboards (`grafana.<base_domain>`)
   - `harbor` — container registry (`harbor.<base_domain>`)

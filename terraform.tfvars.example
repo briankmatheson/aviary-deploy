@@ -40,6 +40,15 @@ cluster_issuer       = "internal-acme"
 gitea_admin_password = "CHANGE_ME"
 # Gitea ssh Service LoadBalancer IP, from your LB pool (Cilium LB IPAM / MetalLB).
 ssh_load_balancer_ip = "192.168.133.9"
+# Second Gateway (aviary-nat) on its own LB address, for NATing in from outside.
+# nat_gateway_ip = "192.168.133.10"
+# Apps are only served there once switched to public on the landing page.
+# Hostnames on that second Gateway: <app>.<public_domain> instead of
+# <app>.<base_domain>, with Let's Encrypt certificates (needs public DNS and
+# ports 80/443 NATed to nat_gateway_ip) unless public_cluster_issuer names
+# another ClusterIssuer.
+# public_domain         = "example.org"
+# public_cluster_issuer = ""
 # ssh_external_host  = ""                 # default ssh.gitea.<base_domain>
 # postgresql_enabled = true               # the chart's bundled single-node Postgres
 
@@ -96,3 +105,11 @@ CREDS
 # velero_backup_storage_provider = "aws"
 # velero_backup_storage_bucket   = "velero-backups"
 # velero_backup_storage_region   = "us-east-1"
+
+# --- Axigen mail server (AxiHelm) --- off until the license path is set
+# axigen_license_file   = "/path/to/axigen_lk.bin"
+# axigen_cluster_key    = ""
+# axigen_admin_password = ""
+# axigen_mail_domain    = ""            # default: base_domain
+# axigen_timezone       = "America/New_York"
+# axigen_storage_size   = "10Gi"

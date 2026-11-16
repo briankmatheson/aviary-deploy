@@ -93,6 +93,14 @@ resource "helm_release" "gitea" {
     # chart defaults to need more nodes than a small cluster has.
     postgresql = {
       enabled = var.postgresql_enabled
+      # The chart's "nano" preset (150m CPU, 192Mi) throttles Postgres under
+      # load until pg_isready times out and the liveness probe kills it.
+      primary = {
+        resources = {
+          requests = { cpu = "250m", memory = "256Mi" }
+          limits   = { cpu = "1", memory = "512Mi" }
+        }
+      }
     }
     "postgresql-ha" = {
       enabled = false

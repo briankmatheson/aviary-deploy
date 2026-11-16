@@ -53,6 +53,46 @@ variable "mattermost_db_password" {
   sensitive   = true
 }
 
+# --- Axigen (AxiHelm) ---
+
+variable "axigen_license_file" {
+  description = "Path to the Axigen license (axigen_lk.bin). Empty: Axigen is not deployed."
+  type        = string
+  default     = ""
+}
+
+variable "axigen_mail_domain" {
+  description = "Mail domain Axigen serves (user@<this>). Empty: base_domain. Changing it replaces the release."
+  type        = string
+  default     = ""
+}
+
+variable "axigen_cluster_key" {
+  description = "Secret the Axigen nodes use for cluster synchronization. Required when Axigen is deployed."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "axigen_admin_password" {
+  description = "Password for the Axigen admin account. Required when Axigen is deployed."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "axigen_timezone" {
+  description = "Default time zone for new Axigen accounts."
+  type        = string
+  default     = "America/New_York"
+}
+
+variable "axigen_storage_size" {
+  description = "Size of the Axigen backend's volume (mailboxes live here)."
+  type        = string
+  default     = "10Gi"
+}
+
 variable "kubewatch_mattermost_webhook" {
   description = "Mattermost incoming-webhook URL kubewatch posts cluster events to."
   type        = string
@@ -216,6 +256,24 @@ variable "gateway_namespace" {
   description = "envoy gateway namespace"
   type        = string
   default     = "envoy-gateway"
+}
+
+variable "nat_gateway_ip" {
+  description = "Load-balancer IP for a second Gateway (aviary-nat) meant to be NATed to from outside. Must be in the cluster's LB pool. Empty: no second Gateway."
+  type        = string
+  default     = ""
+}
+
+variable "public_domain" {
+  description = "Domain the public Gateway (nat_gateway_ip) serves the apps under: <app>.<public_domain>, the landing page at aviary.<public_domain>. Point a wildcard for it at the address that is NATed to nat_gateway_ip. Empty: the public Gateway serves the base_domain hostnames."
+  type        = string
+  default     = ""
+}
+
+variable "public_cluster_issuer" {
+  description = "cert-manager ClusterIssuer for the public_domain certificates. Empty: a Let's Encrypt issuer (letsencrypt) this stack creates, solving HTTP-01 through the public Gateway."
+  type        = string
+  default     = ""
 }
 
 variable "cloudbeaver_admin_password" {
