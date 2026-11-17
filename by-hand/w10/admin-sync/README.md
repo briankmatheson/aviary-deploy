@@ -1,5 +1,10 @@
 # Admins follow Gitea's "Is Administrator" flag
 
+> **Superseded for everyday use (2026-11-17):** the landing page now does
+> this sync itself whenever an admin locks or unlocks System (the lock
+> button beside the SYSTEM heading). The scheduled job below is only needed
+> if the team should follow the flag without anyone pressing that button.
+
 ## TL;DR
 
 ```
