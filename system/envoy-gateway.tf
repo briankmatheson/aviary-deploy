@@ -334,3 +334,29 @@ resource "kubectl_manifest" "gateway_alias_svc" {
   EOF
   depends_on = [kubectl_manifest.gateway]
 }
+
+# Every request through the public gateway carries X-Aviary-Via: public, set by
+# the gateway itself (a client's own value is overwritten), so a backend can
+# tell public traffic apart: the landing page refuses its automation token on
+# such requests.
+resource "kubectl_manifest" "gateway_nat_mark_public" {
+  count      = local.nat_gateway_enabled ? 1 : 0
+  yaml_body  = <<-EOF
+    apiVersion: gateway.envoyproxy.io/v1alpha1
+    kind: ClientTrafficPolicy
+    metadata:
+      name: mark-public
+      namespace: ${var.gateway_namespace}
+    spec:
+      targetRefs:
+        - group: gateway.networking.k8s.io
+          kind: Gateway
+          name: ${local.nat_gateway_name}
+      headers:
+        earlyRequestHeaders:
+          set:
+            - name: X-Aviary-Via
+              value: public
+  EOF
+  depends_on = [kubectl_manifest.gateway_nat]
+}

@@ -97,7 +97,7 @@ resource "kubectl_manifest" "aviaryapp" {
 
 # AviaryConfig: the landing page's page-wide settings, in one object named
 # "aviary". What it leaves out, the page takes from its environment. The page
-# writes the model chosen in its whiteboard, and the System lock, to the
+# writes the model chosen in its whiteboard, and its locks, to the
 # object's status, which this stack does not manage.
 resource "kubectl_manifest" "aviaryconfig_crd" {
   yaml_body = <<EOF
@@ -121,12 +121,14 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
-        - { name: Session, type: integer, jsonPath: .spec.session.minutes, description: minutes a sign-in lasts }
+        - { name: Idle, type: integer, jsonPath: .spec.session.minutes, description: minutes a sign-in lasts with nothing done }
+        - { name: Max, type: integer, jsonPath: .spec.session.maxMinutes, description: minutes a sign-in lasts at most }
         - { name: Admin-Team, type: string, jsonPath: .spec.admin.team }
         - { name: Max-Pods, type: integer, jsonPath: .spec.scale.maxPods }
         - { name: Model, type: string, jsonPath: .status.chat.model }
-        - { name: Locked, type: boolean, jsonPath: .status.lock.locked }
-        - { name: Locked-By, type: string, jsonPath: .status.lock.by }
+        - { name: System, type: boolean, jsonPath: .status.locks.system.locked, description: System locked }
+        - { name: Apps, type: boolean, jsonPath: .status.locks.apps.locked, description: Apps locked }
+        - { name: Whiteboard, type: boolean, jsonPath: .status.locks.whiteboard.locked, description: whiteboard locked }
       schema:
         openAPIV3Schema:
           type: object
@@ -141,10 +143,15 @@ spec:
                   type: object
                   properties:
                     minutes:
-                      description: How long a sign-in to the landing page lasts before it goes back through Gitea. Gitea cannot tell the page that someone logged out or stopped being an administrator, so this is how long that can take to show.
+                      description: The idle timer. A sign-in to the landing page runs out after this many minutes with no activity (clicks, keys, actions; not the page's background polling), then goes back through Gitea.
                       type: integer
                       minimum: 1
                       maximum: 1440
+                    maxMinutes:
+                      description: The most a sign-in lasts from signing in, however active. Gitea cannot tell the page that someone logged out or stopped being an administrator, so this is the longest that can take to show.
+                      type: integer
+                      minimum: 5
+                      maximum: 10080
                 admin:
                   type: object
                   properties:
@@ -178,8 +185,66 @@ spec:
                       description: The model chosen in the whiteboard's menu. Written by the landing page.
                       type: string
                       maxLength: 300
+                locks:
+                  description: The page's locks, written by the landing page when an admin locks or unlocks a part. While a part is locked nobody can change it from the page.
+                  type: object
+                  properties:
+                    system:
+                      description: The System entries' controls, deleting a node, the API key.
+                      type: object
+                      properties:
+                        locked:
+                          type: boolean
+                        by:
+                          description: Who locked or unlocked last.
+                          type: string
+                          maxLength: 200
+                        at:
+                          description: When, in UTC.
+                          type: string
+                          maxLength: 40
+                        sync:
+                          description: What the admin sync run at that moment did.
+                          type: string
+                          maxLength: 500
+                    apps:
+                      description: The Apps entries' controls.
+                      type: object
+                      properties:
+                        locked:
+                          type: boolean
+                        by:
+                          description: Who locked or unlocked last.
+                          type: string
+                          maxLength: 200
+                        at:
+                          description: When, in UTC.
+                          type: string
+                          maxLength: 40
+                        sync:
+                          description: What the admin sync run at that moment did.
+                          type: string
+                          maxLength: 500
+                    whiteboard:
+                      description: Saying, drawing, erasing, choosing or installing a model.
+                      type: object
+                      properties:
+                        locked:
+                          type: boolean
+                        by:
+                          description: Who locked or unlocked last.
+                          type: string
+                          maxLength: 200
+                        at:
+                          description: When, in UTC.
+                          type: string
+                          maxLength: 40
+                        sync:
+                          description: What the admin sync run at that moment did.
+                          type: string
+                          maxLength: 500
                 lock:
-                  description: The System lock. Written by the landing page when an admin locks or unlocks; while locked, nobody can change a System app, delete a node or change the API key from the page.
+                  description: (Superseded by locks.system.) The System lock. Written by the landing page when an admin locks or unlocks; while locked, nobody can change a System app, delete a node or change the API key from the page.
                   type: object
                   properties:
                     locked:

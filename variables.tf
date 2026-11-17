@@ -41,6 +41,13 @@ variable "aviary_frontend_image" {
 
 # --- Gitea ---
 
+variable "gitea_postgres_password" {
+  description = "Superuser password of Gitea's bundled Postgres, as it already is (Secret gitea-postgresql, key postgres-password). Empty: the chart makes one up, which on an existing install changes the Secret on every upgrade."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "gitea_admin_password" {
   description = "Admin password for Gitea."
   type        = string
