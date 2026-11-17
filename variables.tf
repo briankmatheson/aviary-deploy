@@ -453,6 +453,17 @@ variable "aviary_bypass_token" {
   default     = ""
   sensitive   = true
 }
+variable "aviary_anthropic_api_key" {
+  description = "Anthropic API key for Claude in the landing page's whiteboard. Empty: Claude is not in the room. Replies are billed to this key, and what is said in the room is sent to Anthropic's API."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "aviary_claude_model" {
+  description = "Claude model the whiteboard talks to."
+  type        = string
+  default     = "claude-opus-5-5"
+}
 variable "aviary_oauth_admin_only" {
   description = "Require the gitea user to be an admin to use the aviary landing page."
   type        = bool
