@@ -60,33 +60,44 @@ resource "helm_release" "promtail" {
   timeout    = 300
   depends_on = [helm_release.loki]
 
-  values = [yamlencode(merge({
-    config = {
-      clients = concat(
-        [{
+  # The second document, when there is a remote Loki, replaces the list of
+  # clients with both of them and mounts what the remote one needs.
+  values = concat(
+    [yamlencode({
+      config = {
+        clients = [{
           url             = "http://loki.${local.monitoring_ns}.svc.cluster.local:3100/loki/api/v1/push"
           external_labels = { cluster = var.cluster_name }
-        }],
-        local.loki_remote ? [{
-          url             = var.loki_remote_url
-          external_labels = { cluster = var.cluster_name }
-          basic_auth      = { username = var.loki_remote_user, password_file = "/etc/loki-remote/password" }
-          tls_config      = { ca_file = "/etc/platform-ca/ca-bundle.pem" }
-          backoff_config  = { max_period = "5m", max_retries = 20 }
-        }] : [],
-      )
-    }
-    }, local.loki_remote ? {
-    extraVolumes = [
-      { name = "loki-remote", secret = { secretName = kubernetes_secret.loki_remote[0].metadata[0].name } },
-      # trust-manager's bundle (system/trust-manager.tf) carries the platform CA.
-      { name = "platform-ca", configMap = { name = "xdebbie-ca-bundle" } },
-    ]
-    extraVolumeMounts = [
-      { name = "loki-remote", mountPath = "/etc/loki-remote", readOnly = true },
-      { name = "platform-ca", mountPath = "/etc/platform-ca", readOnly = true },
-    ]
-  } : {}))]
+        }]
+      }
+    })],
+    local.loki_remote ? [yamlencode({
+      config = {
+        clients = [
+          {
+            url             = "http://loki.${local.monitoring_ns}.svc.cluster.local:3100/loki/api/v1/push"
+            external_labels = { cluster = var.cluster_name }
+          },
+          {
+            url             = var.loki_remote_url
+            external_labels = { cluster = var.cluster_name }
+            basic_auth      = { username = var.loki_remote_user, password_file = "/etc/loki-remote/password" }
+            tls_config      = { ca_file = "/etc/platform-ca/ca-bundle.pem" }
+            backoff_config  = { max_period = "5m", max_retries = 20 }
+          },
+        ]
+      }
+      extraVolumes = [
+        { name = "loki-remote", secret = { secretName = kubernetes_secret.loki_remote[0].metadata[0].name } },
+        # trust-manager's bundle (system/trust-manager.tf) carries the platform CA.
+        { name = "platform-ca", configMap = { name = "xdebbie-ca-bundle" } },
+      ]
+      extraVolumeMounts = [
+        { name = "loki-remote", mountPath = "/etc/loki-remote", readOnly = true },
+        { name = "platform-ca", mountPath = "/etc/platform-ca", readOnly = true },
+      ]
+    })] : [],
+  )
 }
 
 locals {
