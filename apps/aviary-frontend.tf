@@ -15,20 +15,48 @@ resource "kubernetes_service_account" "aviary_frontend" {
   }
 }
 
-# Read-only: routes/gateways for the menu, nodes for the table, the
-# ClusterIssuer to find the CA secret, metrics if metrics-server is there.
+# What the landing page may do. It is deliberately not cluster-admin (it was,
+# while stop/start ran helm): three roles, each as narrow as its job.
+#
+#   aviary-frontend        cluster-wide: read what the page shows, and the few
+#                          cluster-scoped changes it makes (delete a dead node
+#                          and what it left behind; its own settings' status)
+#   aviary-frontend-app    the controls on a tile, bound only in the namespaces
+#                          of the apps the page lists (local.aviary_app_namespaces)
+#   aviary-frontend-self   its own namespace: its ConfigMaps, the API-key
+#                          Secret, tokens for the whiteboard's read-only account
+#
+# It reads no Secret but the registry pull secret (to list an image's tags)
+# and its own API key, creates no pods and no RBAC, and cannot touch a
+# workload outside the listed namespaces. A new app's namespace has to be
+# added to the list for its tile's controls to work.
 resource "kubernetes_cluster_role" "aviary_frontend" {
   metadata {
     name = "aviary-frontend"
   }
   rule {
-    api_groups = ["gateway.networking.k8s.io"]
-    resources  = ["httproutes", "gateways"]
+    api_groups = [""]
+    resources  = ["nodes", "namespaces", "pods", "persistentvolumeclaims", "persistentvolumes", "limitranges"]
     verbs      = ["get", "list", "watch"]
   }
   rule {
     api_groups = [""]
-    resources  = ["nodes"]
+    resources  = ["nodes", "pods"]
+    verbs      = ["delete"]
+  }
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments", "statefulsets", "daemonsets", "deployments/scale", "statefulsets/scale"]
+    verbs      = ["get", "list", "watch"]
+  }
+  rule {
+    api_groups = ["storage.k8s.io"]
+    resources  = ["volumeattachments"]
+    verbs      = ["get", "list", "delete"]
+  }
+  rule {
+    api_groups = ["gateway.networking.k8s.io"]
+    resources  = ["gateways", "httproutes", "tcproutes", "udproutes"]
     verbs      = ["get", "list", "watch"]
   }
   rule {
@@ -38,20 +66,12 @@ resource "kubernetes_cluster_role" "aviary_frontend" {
   }
   rule {
     api_groups = ["metrics.k8s.io"]
-    resources  = ["nodes"]
+    resources  = ["nodes", "pods"]
     verbs      = ["get", "list"]
   }
-  # AviaryApp objects (system/aviary-apps.tf): each tile's description, group,
-  # and further namespaces.
   rule {
     api_groups = ["aviary.xdebbie.org"]
-    resources  = ["aviaryapps"]
-    verbs      = ["get", "list", "watch"]
-  }
-  # The AviaryConfig object: read its settings, write the chosen model to its status.
-  rule {
-    api_groups = ["aviary.xdebbie.org"]
-    resources  = ["aviaryconfigs"]
+    resources  = ["aviaryapps", "aviaryconfigs"]
     verbs      = ["get", "list", "watch"]
   }
   rule {
@@ -229,19 +249,140 @@ resource "kubernetes_service" "aviary_frontend" {
 }
 # Exposure handled by the shared Envoy Gateway (<base_domain> -> aviary/aviary-frontend:8086).
 
-# Stopping/starting apps from the landing page runs helm uninstall/install as
-# this ServiceAccount, so it must be able to delete and create any resource an
-# app chart contains -- i.e. cluster-admin. The page has no auth of its own, so
-# anyone who can reach it can stop/start apps. That is acceptable on the homelab
-# mesh behind the gateway; gate the buttons (or the page) before exposing it.
-resource "kubernetes_cluster_role_binding" "aviary_frontend_admin" {
+locals {
+  # Namespaces whose apps the page's controls reach: every app with a tile,
+  # the extra namespaces a tile counts (Drone's builds), the model server
+  # the whiteboard's menu starts and stops, and "default" (the shell).
+  aviary_app_namespaces = concat(
+    [for a in [
+      "argo", "axigen", "cloudbeaver", "cnpg-ui", "dns", "drone", "drone-builds", "garage", "gitea", "grafana",
+      "harbor", "headlamp", "jitsi", "kubeshark", "mattermost", "ollama", "rustpad", "velero",
+    ] : "${var.ns_prefix}${a}"],
+    [kubernetes_namespace.aviary.metadata[0].name, "default"],
+  )
+}
+
+resource "kubernetes_cluster_role" "aviary_frontend_app" {
   metadata {
-    name = "aviary-frontend-admin"
+    name = "aviary-frontend-app"
+  }
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments", "statefulsets", "daemonsets"]
+    verbs      = ["patch", "update"]
+  }
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments/scale", "statefulsets/scale"]
+    verbs      = ["get", "patch", "update"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["limitranges"]
+    verbs      = ["get", "create", "update", "patch"]
+  }
+  rule {
+    api_groups = ["gateway.networking.k8s.io"]
+    resources  = ["httproutes", "tcproutes", "udproutes"]
+    verbs      = ["get", "update", "patch"]
+  }
+  rule {
+    api_groups     = [""]
+    resources      = ["secrets"]
+    resource_names = ["mesh-reg"]
+    verbs          = ["get"]
+  }
+}
+
+# Only where the namespace exists: an app that is not installed has none.
+data "kubernetes_all_namespaces" "all" {}
+
+resource "kubernetes_role_binding" "aviary_frontend_app" {
+  for_each = toset([for n in local.aviary_app_namespaces : n if contains(data.kubernetes_all_namespaces.all.namespaces, n)])
+  metadata {
+    name      = "aviary-frontend-app"
+    namespace = each.key
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
-    name      = "cluster-admin"
+    name      = kubernetes_cluster_role.aviary_frontend_app.metadata[0].name
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.aviary_frontend.metadata[0].name
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
+
+# The gateway's own namespace holds routes the page switches and nothing of
+# an app's: there it may edit routes, and no workload.
+resource "kubernetes_cluster_role" "aviary_frontend_routes" {
+  metadata {
+    name = "aviary-frontend-routes"
+  }
+  rule {
+    api_groups = ["gateway.networking.k8s.io"]
+    resources  = ["httproutes", "tcproutes", "udproutes"]
+    verbs      = ["get", "update", "patch"]
+  }
+}
+
+resource "kubernetes_role_binding" "aviary_frontend_routes" {
+  metadata {
+    name      = "aviary-frontend-routes"
+    namespace = var.gateway_namespace
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role.aviary_frontend_routes.metadata[0].name
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.aviary_frontend.metadata[0].name
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+}
+
+resource "kubernetes_role" "aviary_frontend_self" {
+  metadata {
+    name      = "aviary-frontend-self"
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["configmaps"]
+    verbs      = ["get", "create", "update", "patch"]
+  }
+  rule {
+    api_groups     = [""]
+    resources      = ["secrets"]
+    resource_names = ["aviary-claude"]
+    verbs          = ["get", "update", "delete"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["secrets"]
+    verbs      = ["create"]
+  }
+  rule {
+    api_groups     = [""]
+    resources      = ["serviceaccounts/token"]
+    resource_names = ["aviary-chat"]
+    verbs          = ["create"]
+  }
+}
+
+resource "kubernetes_role_binding" "aviary_frontend_self" {
+  metadata {
+    name      = "aviary-frontend-self"
+    namespace = kubernetes_namespace.aviary.metadata[0].name
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.aviary_frontend_self.metadata[0].name
   }
   subject {
     kind      = "ServiceAccount"
@@ -268,8 +409,8 @@ resource "kubernetes_secret" "aviary_frontend_oauth" {
   }
 }
 
-# The identity the chat room's model reads the cluster with. The page itself is
-# cluster-admin (above); the model's lookups (aviary-frontend's kubernetes_get
+# The identity the chat room's model reads the cluster with. The page itself can
+# change workloads (above); the model's lookups (aviary-frontend's kubernetes_get
 # tool) are made with a token for this account instead, so read-only is
 # enforced by RBAC and not left to the model. No Secrets: `view` leaves them
 # out, and the extra role below does not add them.
