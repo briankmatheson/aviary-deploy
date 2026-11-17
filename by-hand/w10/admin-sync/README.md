@@ -1,5 +1,25 @@
 # Admins follow Gitea's "Is Administrator" flag
 
+## TL;DR
+
+```
+cd by-hand/w10/admin-sync && ./apply.sh
+```
+
+That is the whole install. It prints what the first run did, which should be
+one line: `aviary:admins = site administrators (bmath, gitea_admin)`.
+
+After that, the only way to make someone an admin (or stop them being one)
+is the **Is Administrator** tick box on their account in Gitea. Do not edit
+the `aviary:admins` team by hand: the job puts it back within two minutes.
+
+| | |
+|---|---|
+| What it changes | members of the Gitea team `aviary:admins`, nothing else |
+| How often | every 2 minutes |
+| Check it | `kubectl -n aviary-gitea logs job/$(kubectl -n aviary-gitea get jobs -o name \| tail -1 \| cut -d/ -f2)` |
+| Undo | the three lines under **Remove** at the bottom |
+
 **Not applied yet (written 2026-11-17).** The steps below create a Gitea
 access token and a job that changes team membership, so they are left for a
 person to run.
@@ -22,7 +42,9 @@ team is never edited by hand (a hand edit is undone at the next run).
   `write:organization`. It can list users and edit organisations and teams;
   it cannot read repositories or change accounts.
 
-## Apply
+## Apply, step by step
+
+`apply.sh` does exactly this:
 
 ```
 export KUBECONFIG=~/.kube/w10-config
