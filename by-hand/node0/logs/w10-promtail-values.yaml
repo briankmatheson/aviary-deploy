@@ -1,0 +1,18 @@
+# Every pod's logs go two ways: to the Loki in this cluster, as before, and to
+# the one on node0 (reached over the mesh, with a password), which is still
+# there when this cluster is not.
+config:
+  clients:
+  - url: http://loki.aviary-grafana.svc.cluster.local:3100/loki/api/v1/push
+    external_labels: {cluster: w10}
+  - url: https://registry.mesh.bmath.nyc/loki/api/v1/push
+    external_labels: {cluster: w10}
+    basic_auth: {username: logs, password_file: /etc/loki-node0/password}
+    tls_config: {ca_file: /etc/xdebbie-ca/ca-bundle.pem}
+    backoff_config: {max_period: 5m, max_retries: 20}
+extraVolumes:
+- {name: loki-node0, secret: {secretName: loki-node0}}
+- {name: xdebbie-ca, configMap: {name: xdebbie-ca-bundle}}
+extraVolumeMounts:
+- {name: loki-node0, mountPath: /etc/loki-node0, readOnly: true}
+- {name: xdebbie-ca, mountPath: /etc/xdebbie-ca, readOnly: true}

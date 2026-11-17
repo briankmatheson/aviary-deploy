@@ -1,0 +1,46 @@
+# Loki on node0: the log store that outlives the workload clusters. One
+# process, files on the node's own disk (node0 has no storage class), two
+# weeks kept. Reached from outside the cluster through the chart's nginx
+# gateway, which asks for a password.
+deploymentMode: SingleBinary
+loki:
+  auth_enabled: false
+  commonConfig: {replication_factor: 1}
+  storage: {type: filesystem}
+  schemaConfig:
+    configs:
+    - {from: "2024-04-01", store: tsdb, object_store: filesystem, schema: v13, index: {prefix: loki_index_, period: 24h}}
+  limits_config:
+    retention_period: 336h
+    allow_structured_metadata: true
+    reject_old_samples_max_age: 168h
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+singleBinary:
+  replicas: 1
+  persistence: {enabled: false}
+  extraVolumes:
+  - {name: node-disk, hostPath: {path: /var/lib/loki, type: DirectoryOrCreate}}
+  extraVolumeMounts:
+  - {name: node-disk, mountPath: /var/loki}
+  initContainers:
+  - name: own-data
+    image: busybox:stable
+    command: [sh, -c, "chown -R 10001:10001 /var/loki"]
+    securityContext: {runAsUser: 0, runAsNonRoot: false, runAsGroup: 0}
+    volumeMounts: [{name: node-disk, mountPath: /var/loki}]
+  resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {memory: 1536Mi}}
+read: {replicas: 0}
+write: {replicas: 0}
+backend: {replicas: 0}
+chunksCache: {enabled: false}
+resultsCache: {enabled: false}
+lokiCanary: {enabled: false}
+test: {enabled: false}
+minio: {enabled: false}
+gateway:
+  enabled: true
+  replicas: 1
+  basicAuth: {enabled: true, existingSecret: loki-gateway-auth}
+  resources: {requests: {cpu: 20m, memory: 32Mi}, limits: {memory: 128Mi}}

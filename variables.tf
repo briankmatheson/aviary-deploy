@@ -318,6 +318,27 @@ variable "garage_data_size" {
   default     = 20
 }
 
+# --- Logs ---
+
+variable "loki_remote_url" {
+  description = "Push URL of a Loki outside this cluster that gets a copy of every pod's logs, e.g. https://registry.mesh.<domain>/loki/api/v1/push for the one on the management cluster. Empty: logs stay in this cluster only."
+  type        = string
+  default     = ""
+}
+
+variable "loki_remote_user" {
+  description = "Basic-auth user for loki_remote_url."
+  type        = string
+  default     = "logs"
+}
+
+variable "loki_remote_password" {
+  description = "Basic-auth password for loki_remote_url."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 # --- Velero ---
 
 variable "velero_credentials_secret" {
