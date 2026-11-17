@@ -276,6 +276,33 @@ variable "rustpad_pvc_size" {
   default     = 4
 }
 
+# --- CloudBeaver ---
+
+variable "cloudbeaver_admin_password" {
+  description = "Password of CloudBeaver's administrator, set at its first start. Empty leaves CloudBeaver out (it would otherwise hand its setup wizard to the first visitor). At least 8 characters, with a letter and a digit."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "cloudbeaver_admin_user" {
+  description = "Name of CloudBeaver's administrator."
+  type        = string
+  default     = "cbadmin"
+}
+
+variable "cloudbeaver_version" {
+  description = "dbeaver/cloudbeaver image tag."
+  type        = string
+  default     = "26.2.4"
+}
+
+variable "cloudbeaver_pvc_size" {
+  description = "Size of the CloudBeaver workspace volume, in GiB."
+  type        = number
+  default     = 2
+}
+
 # --- Velero ---
 
 variable "velero_credentials_secret" {
@@ -341,18 +368,6 @@ variable "public_cluster_issuer" {
   description = "cert-manager ClusterIssuer for the public_domain certificates. Empty: a Let's Encrypt issuer (letsencrypt) this stack creates, solving HTTP-01 through the public Gateway."
   type        = string
   default     = ""
-}
-
-variable "cloudbeaver_admin_password" {
-  description = "Initial admin password for CloudBeaver"
-  type        = string
-  sensitive   = true
-}
-
-variable "cloudbeaver_chart_path" {
-  description = "Local path to the cloned dbeaver/cloudbeaver-deploy/k8s directory"
-  type        = string
-  default     = "./charts/cloudbeaver-deploy/k8s"
 }
 
 # --- Derived ---

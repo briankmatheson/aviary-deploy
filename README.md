@@ -16,6 +16,7 @@ Terraform/OpenTofu configuration is grouped by role:
   - `bash` — CloudTTY in-browser shell (`bash.<base_domain>`)
   - `drone` — Drone CI (`drone.<base_domain>`)
   - `rustpad` — collaborative text editor (`rustpad.<base_domain>`)
+  - `cloudbeaver` — database client in the browser (`cloudbeaver.<base_domain>`); off until `cloudbeaver_admin_password` is set
 - `system/` — cluster services
   - `envoy-gateway` — Gateway API ingress; the shared `aviary` Gateway that fronts every app
   - `axigen` — Axigen mail server via AxiHelm (WebMail at `mail.<base_domain>`); off until `axigen_license_file` is set
@@ -23,6 +24,7 @@ Terraform/OpenTofu configuration is grouped by role:
   - `grafana` — dashboards (`grafana.<base_domain>`)
   - `harbor` — container registry (`harbor.<base_domain>`)
   - `velero` — backup/restore (`velero.<base_domain>`)
+  - `kubeshark` — live view of traffic between pods (`kubeshark.<base_domain>`)
 - `data/` — stateful services
   - `gitea` — self-hosted git (`gitea.<base_domain>`, ssh via `ssh.gitea.local`)
   - `postgres` — Percona and Zalando Postgres operators, plus the Zalando UI (`postgres-ui.<base_domain>`)
