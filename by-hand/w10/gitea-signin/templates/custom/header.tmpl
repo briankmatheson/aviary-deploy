@@ -1,0 +1,50 @@
+{{/* Aviary: gitea's sign-in pages wear Aviary's look. They are the door to
+     everything here (gitea is the identity provider), so on the sign-in, two
+     factor, forgot-password and "Authorize application" pages gitea's own
+     navigation and footer are hidden and Aviary's name sits over the box.
+     CSS only (gitea's content security policy wants a nonce on scripts);
+     every other gitea page is untouched. */}}
+<style>
+#aviary-brand { display: none; }
+body:has(.page-content.user.signin),
+body:has(.page-content.user.forgot.password),
+body:has(.page-content.oauth2-authorize-application-box) {
+  background-color: #fbfbf8;
+  background-image:
+    linear-gradient(rgba(70,130,180,.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(70,130,180,.28) 1px, transparent 1px),
+    linear-gradient(rgba(70,130,180,.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(70,130,180,.10) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+}
+@media (prefers-color-scheme: dark) {
+  body:has(.page-content.user.signin),
+  body:has(.page-content.user.forgot.password),
+  body:has(.page-content.oauth2-authorize-application-box) {
+    background-color: #14181d;
+    background-image:
+      linear-gradient(rgba(110,160,210,.20) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110,160,210,.20) 1px, transparent 1px),
+      linear-gradient(rgba(110,160,210,.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110,160,210,.07) 1px, transparent 1px);
+  }
+}
+body:has(.page-content.user.signin) #navbar,
+body:has(.page-content.user.forgot.password) #navbar,
+body:has(.page-content.oauth2-authorize-application-box) #navbar,
+body:has(.page-content.user.signin) .page-footer,
+body:has(.page-content.user.forgot.password) .page-footer,
+body:has(.page-content.oauth2-authorize-application-box) .page-footer { display: none !important; }
+body:has(.page-content.user.signin) .full.height,
+body:has(.page-content.user.forgot.password) .full.height,
+body:has(.page-content.oauth2-authorize-application-box) .full.height { background: none; }
+body:has(.page-content.user.signin) #aviary-brand,
+body:has(.page-content.user.forgot.password) #aviary-brand,
+body:has(.page-content.oauth2-authorize-application-box) #aviary-brand {
+  display: block; max-width: 42rem; margin: 0 auto; padding: 9vh 16px 4px;
+  font-family: system-ui, sans-serif;
+}
+#aviary-brand a { display: block; font-size: 56px; font-weight: 700; letter-spacing: -1px; line-height: 1.1;
+  color: var(--color-text); text-decoration: none; }
+#aviary-brand span { display: block; font-size: 14px; font-weight: 600; color: var(--color-text-light-2); }
+</style>
