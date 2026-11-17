@@ -94,3 +94,104 @@ resource "kubectl_manifest" "aviaryapp" {
   })
   depends_on = [kubectl_manifest.aviaryapp_crd]
 }
+
+# AviaryConfig: the landing page's page-wide settings, in one object named
+# "aviary". What it leaves out, the page takes from its environment. The page
+# writes the model chosen in its whiteboard to the object's status, which
+# this stack does not manage.
+resource "kubectl_manifest" "aviaryconfig_crd" {
+  yaml_body = <<EOF
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: aviaryconfigs.aviary.xdebbie.org
+spec:
+  group: aviary.xdebbie.org
+  scope: Cluster
+  names:
+    kind: AviaryConfig
+    listKind: AviaryConfigList
+    plural: aviaryconfigs
+    singular: aviaryconfig
+    shortNames: [avcfg]
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - { name: Session, type: integer, jsonPath: .spec.session.minutes, description: minutes a sign-in lasts }
+        - { name: Admin-Team, type: string, jsonPath: .spec.admin.team }
+        - { name: Max-Pods, type: integer, jsonPath: .spec.scale.maxPods }
+        - { name: Model, type: string, jsonPath: .status.chat.model }
+      schema:
+        openAPIV3Schema:
+          type: object
+          x-kubernetes-validations:
+            - rule: self.metadata.name == 'aviary'
+              message: there is one AviaryConfig, and it is named "aviary"
+          properties:
+            spec:
+              type: object
+              properties:
+                session:
+                  type: object
+                  properties:
+                    minutes:
+                      description: How long a sign-in to the landing page lasts before it goes back through Gitea. Gitea cannot tell the page that someone logged out or stopped being an administrator, so this is how long that can take to show.
+                      type: integer
+                      minimum: 1
+                      maximum: 1440
+                admin:
+                  type: object
+                  properties:
+                    team:
+                      description: A Gitea team, as "org:team", whose members are admins on the landing page besides Gitea's site administrators. Empty or absent means site administrators only.
+                      type: string
+                      maxLength: 200
+                      pattern: '^$|^[^:\s]+:[^:\s]+$'
+                scale:
+                  type: object
+                  properties:
+                    maxPods:
+                      description: The most pods the Scale popup will set on one workload.
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                chat:
+                  type: object
+                  properties:
+                    briefing:
+                      description: What the whiteboard's model is told about this place, beyond the list of apps.
+                      type: string
+                      maxLength: 24000
+            status:
+              type: object
+              properties:
+                chat:
+                  type: object
+                  properties:
+                    model:
+                      description: The model chosen in the whiteboard's menu. Written by the landing page.
+                      type: string
+                      maxLength: 300
+EOF
+}
+
+resource "kubectl_manifest" "aviaryconfig" {
+  yaml_body = yamlencode({
+    apiVersion = "aviary.xdebbie.org/v1alpha1"
+    kind       = "AviaryConfig"
+    metadata   = { name = "aviary" }
+    spec = merge(
+      {
+        session = { minutes = var.aviary_session_minutes }
+        scale   = { maxPods = var.aviary_scale_max_pods }
+      },
+      var.aviary_admin_team != "" ? { admin = { team = var.aviary_admin_team } } : {},
+      var.aviary_chat_briefing != "" ? { chat = { briefing = var.aviary_chat_briefing } } : {},
+    )
+  })
+  depends_on = [kubectl_manifest.aviaryconfig_crd]
+}

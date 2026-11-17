@@ -48,6 +48,17 @@ resource "kubernetes_cluster_role" "aviary_frontend" {
     resources  = ["aviaryapps"]
     verbs      = ["get", "list", "watch"]
   }
+  # The AviaryConfig object: read its settings, write the chosen model to its status.
+  rule {
+    api_groups = ["aviary.xdebbie.org"]
+    resources  = ["aviaryconfigs"]
+    verbs      = ["get", "list", "watch"]
+  }
+  rule {
+    api_groups = ["aviary.xdebbie.org"]
+    resources  = ["aviaryconfigs/status"]
+    verbs      = ["get", "patch", "update"]
+  }
 }
 
 resource "kubernetes_cluster_role_binding" "aviary_frontend" {

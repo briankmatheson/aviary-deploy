@@ -490,3 +490,29 @@ variable "aviary_oauth_admin_only" {
   type        = bool
   default     = false
 }
+
+# --- Aviary landing page settings (the AviaryConfig object) ---
+
+variable "aviary_session_minutes" {
+  description = "How long a sign-in to the landing page lasts before it goes back through Gitea (1-1440)."
+  type        = number
+  default     = 30
+}
+
+variable "aviary_scale_max_pods" {
+  description = "The most pods the landing page's Scale popup will set on one workload (1-100)."
+  type        = number
+  default     = 10
+}
+
+variable "aviary_admin_team" {
+  description = "A Gitea team, as org:team, whose members are admins on the landing page besides Gitea's site administrators. Empty: site administrators only."
+  type        = string
+  default     = ""
+}
+
+variable "aviary_chat_briefing" {
+  description = "What the whiteboard's model is told about this place (up to 24000 characters). Empty: the page falls back to the briefing key of its aviary-chat ConfigMap."
+  type        = string
+  default     = ""
+}
