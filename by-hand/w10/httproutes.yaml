@@ -239,3 +239,37 @@ spec:
     - path:
         type: PathPrefix
         value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    aviary/group: system
+  name: bash
+  namespace: default
+spec:
+  hostnames:
+  - bash.aviary.mesh.bmath.nyc
+  - bash.xdebbie.org
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-bash
+  rules:
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: cloudshell-aviary-bash
+      port: 7681
+      weight: 1
+    filters:
+    - requestHeaderModifier:
+        remove:
+        - X-Aviary-Id-Token
+      type: RequestHeaderModifier
+    matches:
+    - path:
+        type: PathPrefix
+        value: /

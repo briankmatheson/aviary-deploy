@@ -372,12 +372,39 @@ metadata:
   name: gitea-login-bash
   namespace: default
 spec:
+  authorization:
+    defaultAction: Deny
+    rules:
+    - action: Allow
+      name: gitea-admins-team
+      principal:
+        jwt:
+          claims:
+          - name: groups
+            valueType: StringArray
+            values:
+            - aviary:admins
+          provider: gitea
+  jwt:
+    providers:
+    - audiences:
+      - c1a5eaea-91d4-4af6-b3ed-8f760cd4cb43
+      extractFrom:
+        headers:
+        - name: X-Aviary-Id-Token
+      issuer: https://gitea.aviary.mesh.bmath.nyc
+      name: gitea
+      remoteJWKS:
+        cacheDuration: 300s
+        uri: http://gitea-http.aviary-gitea.svc.cluster.local:3000/login/oauth/keys
   oidc:
-    clientID: e4685731-9b81-4988-9fba-9e5c92c39aa5
+    clientID: c1a5eaea-91d4-4af6-b3ed-8f760cd4cb43
     clientSecret:
       group: ''
       kind: Secret
-      name: aviary-gateway-oidc
+      name: aviary-gateway-system-oidc
+    forwardIDToken:
+      header: X-Aviary-Id-Token
     logoutPath: /oauth2/logout
     provider:
       authorizationEndpoint: https://gitea.aviary.mesh.bmath.nyc/login/oauth/authorize
@@ -390,11 +417,12 @@ spec:
         weight: 1
       issuer: https://gitea.aviary.mesh.bmath.nyc
       tokenEndpoint: https://gitea.aviary.mesh.bmath.nyc/login/oauth/access_token
-    refreshToken: true
+    refreshToken: false
     scopes:
     - openid
     - profile
     - email
+    - groups
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute

@@ -18,8 +18,8 @@ and the landing page (`ADMIN_TEAM`) both go by it.
 |---|---|---|---|
 | `aviary` | landing page | `/oauth/callback` | `aviary/aviary-frontend-oauth` |
 | `drone` | Drone | `/login` | Drone's helm values |
-| `aviary-gateway` | gates: jitsi, rustpad, bash, cloudbeaver | `https://<app>.<domain>/oauth2/callback` | `aviary-gateway-oidc` in each app's namespace |
-| `aviary-gateway-system` | gates: kubeshark, headlamp, velero, grafana | same shape | `aviary-gateway-system-oidc` in each namespace |
+| `aviary-gateway` | gates: jitsi, rustpad, cloudbeaver | `https://<app>.<domain>/oauth2/callback` | `aviary-gateway-oidc` in each app's namespace |
+| `aviary-gateway-system` | gates: kubeshark, headlamp, velero, grafana, bash | same shape | `aviary-gateway-system-oidc` in each namespace |
 | `axigen` | Axigen WebMail | `https://mail.<domain>:443/?action=oauthLogin&custom=ajaxdirect` | Axigen's config; copy in `aviary-axigen/gitea-oidc-client` |
 | `harbor` | Harbor | `/c/oidc/callback` | Harbor's config; copy in `aviary-harbor/gitea-oidc-client` |
 
@@ -31,8 +31,8 @@ secret: take it from the response and update every Secret that holds it.
 Envoy Gateway `SecurityPolicy` per route, each with a `ReferenceGrant` in
 `aviary-gitea` so it may reach `gitea-http`.
 
-- Apps (jitsi, rustpad, bash): Gitea login, any user.
-- System (kubeshark, headlamp, velero, grafana): Gitea login, then the ID
+- Apps (jitsi, rustpad): Gitea login, any user.
+- System (kubeshark, headlamp, velero, grafana, bash): Gitea login, then the ID
   token (forwarded as `X-Aviary-Id-Token`, checked against Gitea's keys over
   in-cluster HTTP) must carry `aviary:admins`; everything else is denied. No
   token refresh. The routes strip the header before the app sees it.
