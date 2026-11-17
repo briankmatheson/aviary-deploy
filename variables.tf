@@ -350,6 +350,12 @@ variable "velero_backup_storage_region" {
   default     = "us-east-1"
 }
 
+variable "velero_backup_storage_s3_url" {
+  description = "S3 endpoint for the BackupStorageLocation when it is not AWS, e.g. Garage's http://garage.<ns_prefix>garage.svc.cluster.local:3900 (with velero_backup_storage_region = \"garage\" and a Garage key in velero_credentials_secret). Empty: AWS."
+  type        = string
+  default     = ""
+}
+
 variable "cluster_name" {
   description = "capi name of cluster"
   type        = string
