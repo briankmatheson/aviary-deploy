@@ -47,7 +47,7 @@ locals {
   vhosts = merge(local.axigen_vhost, local.jitsi_vhost, {
     argo       = { host = "argo.${var.base_domain}", namespace = "${var.ns_prefix}argo", service = "argo-argocd-server", port = 80, tls = "argo-tls", group = "apps" }
     aviary     = { host = var.base_domain, namespace = "aviary", service = "aviary-frontend", port = 8086, tls = "aviary-tls", group = "apps" }
-    bash       = { host = "bash.${var.base_domain}", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls", group = "apps" }
+    bash       = { host = "bash.${var.base_domain}", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls", group = "system" }
     drone      = { host = "drone.${var.base_domain}", namespace = "${var.ns_prefix}drone", service = "drone", port = 8080, tls = "drone-tls", group = "apps" }
     rustpad    = { host = "rustpad.${var.base_domain}", namespace = "${var.ns_prefix}${var.rustpad_namespace}", service = "rustpad", port = 3030, tls = "rustpad-tls", group = "apps" }
     grafana    = { host = "grafana.${var.base_domain}", namespace = "${var.ns_prefix}${var.grafana_namespace}", service = "grafana", port = 80, tls = "grafana-tls", group = "system" }
