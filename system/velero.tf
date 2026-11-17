@@ -15,7 +15,13 @@ resource "helm_release" "velero" {
         name     = var.velero_backup_storage_name
         provider = var.velero_backup_storage_provider
         bucket   = var.velero_backup_storage_bucket
-        config   = { region = var.velero_backup_storage_region }
+        # With an S3 endpoint of our own (Garage, system/garage.tf: region
+        # "garage"), the plugin is told where it is and to address buckets by
+        # path; without one it talks to AWS.
+        config = merge(
+          { region = var.velero_backup_storage_region },
+          var.velero_backup_storage_s3_url != "" ? { s3Url = var.velero_backup_storage_s3_url, s3ForcePathStyle = "true" } : {},
+        )
       }]
       # The chart renders a VolumeSnapshotLocation unconditionally; it needs
       # a provider or the API server rejects it.
