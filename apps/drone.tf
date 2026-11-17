@@ -59,117 +59,120 @@ EOF
     helm_release.drone,
   ]
 }
-resource "kubectl_manifest" "drone-role" {
-  yaml_body = <<EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  annotations:
-  name: drone
-  namespace: default
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - create
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/log
-  verbs:
-  - get
-  - create
-  - delete
-  - list
-  - watch
-  - update
-EOF
-  depends_on = [
-    helm_release.drone
-  ]
-}
-resource "kubectl_manifest" "drone-rolebindings" {
-  yaml_body = <<EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: drone
-  namespace: default
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: drone
-subjects:
-- kind: ServiceAccount
-  name: drone
-  namespace: default
-EOF
-  depends_on = [
-    helm_release.drone
-  ]
+# The runner sits beside the server, and starts each build's pod in a
+# namespace of its own: the runner's ServiceAccount can touch pods and secrets
+# there and nowhere else, and builds share nothing with other workloads. The
+# namespace's aviary/app label makes the landing page count the builds on
+# Drone's tile. (Until 2026-11-17 the runner and the builds lived in "default".)
+locals {
+  drone_namespace        = "${var.ns_prefix}drone"
+  drone_builds_namespace = "${var.ns_prefix}drone-builds"
 }
 
-resource "kubernetes_service_account" "drone" {
+resource "kubernetes_namespace" "drone_builds" {
   metadata {
-    name      = "drone"
-    namespace = "default"
+    name   = local.drone_builds_namespace
+    labels = { "aviary/app" = "drone" }
   }
-  depends_on = [
-    helm_release.drone
-  ]
 }
 
+resource "kubernetes_service_account" "drone_runner" {
+  metadata {
+    name      = "drone-runner"
+    namespace = local.drone_namespace
+  }
+  depends_on = [helm_release.drone]
+}
+
+resource "kubernetes_role" "drone_runner" {
+  metadata {
+    name      = "drone-runner"
+    namespace = kubernetes_namespace.drone_builds.metadata[0].name
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["secrets"]
+    verbs      = ["create", "delete"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["pods", "pods/log"]
+    verbs      = ["get", "create", "delete", "list", "watch", "update"]
+  }
+}
+
+resource "kubernetes_role_binding" "drone_runner" {
+  metadata {
+    name      = "drone-runner"
+    namespace = kubernetes_namespace.drone_builds.metadata[0].name
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.drone_runner.metadata[0].name
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.drone_runner.metadata[0].name
+    namespace = local.drone_namespace
+  }
+}
+
+resource "kubernetes_secret" "drone_runner_rpc" {
+  metadata {
+    name      = "drone-runner-rpc"
+    namespace = local.drone_namespace
+  }
+  data       = { secret = var.drone_rpc_secret }
+  depends_on = [helm_release.drone]
+}
+
+# Its labels must not be the server's (app.kubernetes.io/name: drone): the
+# server's Service would send the web UI's traffic to the runner as well.
+# Not privileged and no host mounts: the kubernetes runner only talks to the
+# API server.
 resource "kubectl_manifest" "drone-runner" {
   yaml_body = <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: drone-runner
-  namespace: default
+  namespace: ${local.drone_namespace}
   labels:
-    app.kubernetes.io/name: drone
+    app.kubernetes.io/name: drone-runner
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: drone
+      app.kubernetes.io/name: drone-runner
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: drone
+        app.kubernetes.io/name: drone-runner
     spec:
-      serviceAccount: drone
-      serviceAccountName: drone
+      serviceAccountName: ${kubernetes_service_account.drone_runner.metadata[0].name}
       containers:
       - name: runner
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - mountPath: /var/run
-          name: run
         image: drone/drone-runner-kube:latest
         ports:
         - containerPort: 3000
         env:
-        # The server's Service, in the (prefixed) namespace the chart lands in.
         - name: DRONE_RPC_HOST
-          value: drone.${var.ns_prefix}drone:8080
+          value: drone.${local.drone_namespace}:8080
         - name: DRONE_RPC_PROTO
           value: http
         - name: DRONE_RPC_SECRET
-          value: "${var.drone_rpc_secret}"
-      volumes:
-      - name: run
-        hostPath:
-          path: /var/run
-          type: Directory
+          valueFrom:
+            secretKeyRef:
+              name: ${kubernetes_secret.drone_runner_rpc.metadata[0].name}
+              key: secret
+        - name: DRONE_NAMESPACE_DEFAULT
+          value: ${kubernetes_namespace.drone_builds.metadata[0].name}
+        - name: DRONE_RUNNER_NAME
+          value: aviary-drone-runner
 EOF
   depends_on = [
     helm_release.drone,
-    kubernetes_service_account.drone
+    kubernetes_role_binding.drone_runner,
   ]
 }
