@@ -1,0 +1,87 @@
+# cnpg-ui (github.com/dbonne/cnpg-ui): a web page for the CloudNativePG
+# databases in one namespace -- here aviary-mattermost, the only one that has
+# any: status, logs, backups, and creating, changing and deleting clusters.
+#
+# Not its Helm chart, which binds a ClusterRole (every namespace's databases
+# and pods, and `get` on every Secret in the cluster). Here it can touch only
+# the namespace it manages and read only its own credentials Secret, talks to
+# nothing outside the cluster, and is reached only through the gateway, behind
+# the admins-only Gitea gate. It keeps its own login as well (user admin; the
+# hash is in aviary-mattermost/cnpg-ui-credentials, the password in
+# aviary-cnpg-ui/cnpg-ui-admin).
+apiVersion: v1
+kind: Namespace
+metadata: {name: aviary-cnpg-ui}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: cnpg-ui, namespace: aviary-cnpg-ui}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: cnpg-ui, namespace: aviary-mattermost}
+rules:
+- apiGroups: [postgresql.cnpg.io]
+  resources: [clusters, backups, scheduledbackups]
+  verbs: [get, list, watch, create, update, patch, delete]
+- apiGroups: [postgresql.cnpg.io]
+  resources: [poolers]
+  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [pods, pods/log]
+  verbs: [get, list, watch]
+# Its login: read, and update when the password is changed in the page.
+- apiGroups: [""]
+  resources: [secrets]
+  resourceNames: [cnpg-ui-credentials]
+  verbs: [get, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: cnpg-ui, namespace: aviary-mattermost}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: cnpg-ui}
+subjects: [{kind: ServiceAccount, name: cnpg-ui, namespace: aviary-cnpg-ui}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: cnpg-ui, namespace: aviary-cnpg-ui, labels: {app: cnpg-ui}}
+spec:
+  replicas: 1   # sessions are kept in memory
+  selector: {matchLabels: {app: cnpg-ui}}
+  template:
+    metadata: {labels: {app: cnpg-ui}}
+    spec:
+      serviceAccountName: cnpg-ui
+      securityContext: {runAsNonRoot: true, runAsUser: 65532, runAsGroup: 65532, seccompProfile: {type: RuntimeDefault}}
+      containers:
+      - name: cnpg-ui
+        image: ghcr.io/dbonne/cnpg-ui:0.1.0@sha256:14893216938e90580f57abb8cfa90c88ed99445067bff4d39cacc0571e8460d7
+        ports: [{name: http, containerPort: 8080}]
+        env:
+        - {name: CNPG_UI_LISTEN_PORT, value: "8080"}
+        - {name: CNPG_UI_NAMESPACE, value: aviary-mattermost}
+        - {name: CNPG_UI_SECRET_NAME, value: cnpg-ui-credentials}
+        - {name: CNPG_UI_SESSION_TTL, value: 1h}
+        readinessProbe: {httpGet: {path: /healthz, port: http}, initialDelaySeconds: 3, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /healthz, port: http}, initialDelaySeconds: 5, periodSeconds: 15}
+        securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+        resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 256Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: cnpg-ui, namespace: aviary-cnpg-ui}
+spec:
+  selector: {app: cnpg-ui}
+  ports: [{port: 8080, targetPort: 8080}]
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: {name: cnpg-ui, namespace: aviary-cnpg-ui}
+spec:
+  endpointSelector: {matchLabels: {app: cnpg-ui}}
+  ingress:
+  - fromEndpoints: [{matchLabels: {"k8s:io.kubernetes.pod.namespace": envoy-gateway-system}}]
+    toPorts: [{ports: [{port: "8080", protocol: TCP}]}]
+  - fromEntities: [host]
+  egress:
+  - toEntities: [cluster, kube-apiserver]
