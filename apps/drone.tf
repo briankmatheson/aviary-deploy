@@ -130,7 +130,8 @@ resource "kubernetes_secret" "drone_runner_rpc" {
 # Its labels must not be the server's (app.kubernetes.io/name: drone): the
 # server's Service would send the web UI's traffic to the runner as well.
 # Not privileged and no host mounts: the kubernetes runner only talks to the
-# API server.
+# API server. Each pod is a runner of its own (named after the pod); the
+# server hands a build to whichever asks first.
 resource "kubectl_manifest" "drone-runner" {
   yaml_body = <<EOF
 apiVersion: apps/v1
@@ -141,7 +142,7 @@ metadata:
   labels:
     app.kubernetes.io/name: drone-runner
 spec:
-  replicas: 1
+  replicas: ${var.drone_runner_replicas}
   selector:
     matchLabels:
       app.kubernetes.io/name: drone-runner
@@ -168,8 +169,6 @@ spec:
               key: secret
         - name: DRONE_NAMESPACE_DEFAULT
           value: ${kubernetes_namespace.drone_builds.metadata[0].name}
-        - name: DRONE_RUNNER_NAME
-          value: aviary-drone-runner
 EOF
   depends_on = [
     helm_release.drone,

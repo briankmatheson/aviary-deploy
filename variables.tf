@@ -160,6 +160,12 @@ variable "drone_admin_user" {
   default     = "bmath"
 }
 
+variable "drone_runner_replicas" {
+  description = "How many Drone runner pods. Each takes builds from the server independently."
+  type        = number
+  default     = 5
+}
+
 variable "drone_rpc_secret" {
   description = "Shared secret between the Drone server and its runners."
   type        = string
