@@ -69,7 +69,6 @@ grafana_admin_password = "CHANGE_ME"
 # ============================== CloudBeaver ==============================
 
 cloudbeaver_admin_password = "CHANGE_ME"
-# cloudbeaver_chart_path   = "./charts/cloudbeaver-deploy/k8s"
 
 # ========================= Postgres (CloudNativePG) ======================
 

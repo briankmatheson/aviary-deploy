@@ -44,7 +44,11 @@ locals {
   jitsi_vhost = var.jitsi_enabled && var.jitsi_jvb_load_balancer_ip != "" ? {
     jitsi = { host = "jitsi.${var.base_domain}", namespace = "${var.ns_prefix}jitsi", service = "jitsi-jitsi-meet-web", port = 8000, tls = "jitsi-tls", group = "apps" }
   } : {}
-  vhosts = merge(local.axigen_vhost, local.jitsi_vhost, {
+  # CloudBeaver (apps/cloudbeaver.tf) is there only once its admin password is set.
+  cloudbeaver_vhost = var.cloudbeaver_admin_password != "" ? {
+    cloudbeaver = { host = "cloudbeaver.${var.base_domain}", namespace = "${var.ns_prefix}cloudbeaver", service = "cloudbeaver", port = 8978, tls = "cloudbeaver-tls", group = "apps" }
+  } : {}
+  vhosts = merge(local.axigen_vhost, local.jitsi_vhost, local.cloudbeaver_vhost, {
     argo       = { host = "argo.${var.base_domain}", namespace = "${var.ns_prefix}argo", service = "argo-argocd-server", port = 80, tls = "argo-tls", group = "apps" }
     aviary     = { host = var.base_domain, namespace = "aviary", service = "aviary-frontend", port = 8086, tls = "aviary-tls", group = "apps" }
     bash       = { host = "bash.${var.base_domain}", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls", group = "apps" }
@@ -53,6 +57,7 @@ locals {
     grafana    = { host = "grafana.${var.base_domain}", namespace = "${var.ns_prefix}${var.grafana_namespace}", service = "grafana", port = 80, tls = "grafana-tls", group = "system" }
     harbor     = { host = "harbor.${var.base_domain}", namespace = "${var.ns_prefix}${var.harbor_namespace}", service = "harbor", port = 80, tls = "harbor-tls", group = "apps" }
     velero     = { host = "velero.${var.base_domain}", namespace = "${var.ns_prefix}velero", service = "velero", port = 8085, tls = "velero-tls", group = "system" }
+    kubeshark  = { host = "kubeshark.${var.base_domain}", namespace = "${var.ns_prefix}kubeshark", service = "kubeshark-front", port = 80, tls = "kubeshark-tls", group = "system" }
     gitea      = { host = "gitea.${var.base_domain}", namespace = "${var.ns_prefix}gitea", service = "gitea-http", port = 3000, tls = "gitea-tls", group = "apps" }
     mattermost = { host = "mattermost.${var.base_domain}", namespace = "${var.ns_prefix}mattermost", service = "mattermost-team-edition", port = 8065, tls = "mattermost-tls", group = "apps" }
     # qdrant lives in disabled/; its route would fail without the namespace:
@@ -291,6 +296,7 @@ resource "kubectl_manifest" "httproute" {
     kubectl_manifest.gateway_nat,
     helm_release.harbor,
     helm_release.velero,
+    helm_release.kubeshark,
     helm_release.headlamp,
     helm_release.gitea,
     helm_release.mattermost,
