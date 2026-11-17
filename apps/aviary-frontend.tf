@@ -172,6 +172,15 @@ spec:
                 secretKeyRef:
                   name: aviary-frontend-oauth
                   key: bypass_token
+            # Claude in the whiteboard: there only when the key is set (the
+            # page treats an empty value as no key).
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aviary-frontend-oauth
+                  key: anthropic_api_key
+            - name: CLAUDE_MODEL
+              value: "${var.aviary_claude_model}"
           readinessProbe:
             httpGet:
               path: /healthz
@@ -236,6 +245,8 @@ resource "kubernetes_secret" "aviary_frontend_oauth" {
     client_secret  = var.aviary_oauth_client_secret
     session_secret = var.aviary_session_secret
     bypass_token   = var.aviary_bypass_token
+    # Not OAuth, but the page's other secret: the key Claude answers with.
+    anthropic_api_key = var.aviary_anthropic_api_key
   }
 }
 
