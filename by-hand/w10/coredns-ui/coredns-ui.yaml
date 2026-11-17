@@ -1,0 +1,90 @@
+# coredns-ui (github.com/beztebya666/coredns-ui) for the authoritative DNS in
+# this namespace: metrics, logs, the Corefile, restart and scale. The image is
+# built from its source with one change (which CoreDNS it looks after is read
+# from DNS_* variables instead of being fixed to kube-system's). It has no
+# login of its own and is a small young project, so: it can see and change
+# only this namespace, talks to nothing outside the cluster, and is reached
+# only through the gateway, behind the admins-only Gitea gate.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: coredns-ui, namespace: aviary-dns}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: coredns-ui, namespace: aviary-dns}
+rules:
+- apiGroups: [""]
+  resources: [pods, services, endpoints, events]
+  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [pods/log]
+  verbs: [get]
+# The Corefile lives in ConfigMap dns; its own history and settings are
+# ConfigMaps it creates beside it.
+- apiGroups: [""]
+  resources: [configmaps]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [apps]
+  resources: [deployments]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [deployments, deployments/scale]
+  resourceNames: [dns]
+  verbs: [get, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: coredns-ui, namespace: aviary-dns}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: coredns-ui}
+subjects: [{kind: ServiceAccount, name: coredns-ui, namespace: aviary-dns}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: coredns-ui, namespace: aviary-dns, labels: {app: coredns-ui}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: coredns-ui}}
+  template:
+    metadata: {labels: {app: coredns-ui}}
+    spec:
+      serviceAccountName: coredns-ui
+      imagePullSecrets: [{name: mesh-reg}]
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+      containers:
+      - name: coredns-ui
+        image: registry.mesh.bmath.nyc/coredns-ui:1.0.0-aviary1
+        ports: [{name: http, containerPort: 8080}]
+        env:
+        - {name: LISTEN_ADDR, value: ":8080"}
+        - {name: UI_NAMESPACE, value: aviary-dns}
+        - {name: DNS_NAMESPACE, value: aviary-dns}
+        - {name: DNS_DEPLOYMENT, value: dns}
+        - {name: DNS_CONFIGMAP, value: dns}
+        - {name: DNS_SELECTOR, value: app=dns}
+        - {name: DNS_SERVICE, value: dns}
+        - {name: SCRAPE_INTERVAL, value: 15s}
+        - {name: PROMETHEUS_URL, value: "http://kube-prometheus-stack-prometheus.aviary-grafana.svc.cluster.local:9090"}
+        readinessProbe: {httpGet: {path: /api/health, port: http}, initialDelaySeconds: 3, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /api/health, port: http}, initialDelaySeconds: 10, periodSeconds: 20}
+        securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+        resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {memory: 512Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: coredns-ui, namespace: aviary-dns}
+spec:
+  selector: {app: coredns-ui}
+  ports: [{port: 80, targetPort: 8080}]
+---
+# In: the gateway's proxies only. Out: the cluster only -- nothing on the internet.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: {name: coredns-ui, namespace: aviary-dns}
+spec:
+  endpointSelector: {matchLabels: {app: coredns-ui}}
+  ingress:
+  - fromEndpoints: [{matchLabels: {"k8s:io.kubernetes.pod.namespace": envoy-gateway-system}}]
+    toPorts: [{ports: [{port: "8080", protocol: TCP}]}]
+  - fromEntities: [host]
+  egress:
+  - toEntities: [cluster, kube-apiserver]

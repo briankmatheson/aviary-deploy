@@ -1,0 +1,68 @@
+diff --git a/app/Dockerfile b/app/Dockerfile
+index 5e6171b..81678c1 100644
+--- a/app/Dockerfile
++++ b/app/Dockerfile
+@@ -10,8 +10,7 @@ RUN npm run build
+ # registry.k8s.io image blobs are blocked on this network; Go modules come via
+ # goproxy.cn, base images via Docker Hub. See cluster/README.md.
+ FROM golang:1.22-alpine AS build
+-ENV GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct \
+-    GOSUMDB=off \
++ENV GOPROXY=https://proxy.golang.org,direct \
+     CGO_ENABLED=0 \
+     GOOS=linux \
+     GOARCH=amd64
+diff --git a/app/internal/k8s/k8s.go b/app/internal/k8s/k8s.go
+index 351b807..a9411b1 100644
+--- a/app/internal/k8s/k8s.go
++++ b/app/internal/k8s/k8s.go
+@@ -7,6 +7,7 @@ import (
+ 	"context"
+ 	"fmt"
+ 	"io"
++	"os"
+ 	"sort"
+ 	"time"
+ 
+@@ -19,14 +20,26 @@ import (
+ 	"k8s.io/client-go/tools/clientcmd"
+ )
+ 
+-const (
+-	DNSNamespace  = "kube-system"
+-	DNSDeployment = "coredns"
+-	DNSConfigMap  = "coredns"
+-	DNSSelector   = "k8s-app=kube-dns"
+-	HistoryCM     = "coredns-ui-history"
++const HistoryCM = "coredns-ui-history"
++
++// Which CoreDNS this console looks after. The defaults are the cluster's
++// resolver; DNS_NAMESPACE, DNS_DEPLOYMENT, DNS_CONFIGMAP, DNS_SELECTOR and
++// DNS_SERVICE point it at another CoreDNS (aviary: the authoritative one).
++var (
++	DNSNamespace  = envOr("DNS_NAMESPACE", "kube-system")
++	DNSDeployment = envOr("DNS_DEPLOYMENT", "coredns")
++	DNSConfigMap  = envOr("DNS_CONFIGMAP", "coredns")
++	DNSSelector   = envOr("DNS_SELECTOR", "k8s-app=kube-dns")
++	DNSService    = envOr("DNS_SERVICE", "kube-dns")
+ )
+ 
++func envOr(k, def string) string {
++	if v := os.Getenv(k); v != "" {
++		return v
++	}
++	return def
++}
++
+ // Client is the coredns-ui Kubernetes client.
+ type Client struct {
+ 	cs        *kubernetes.Clientset
+@@ -208,7 +221,7 @@ func (c *Client) DeploymentState() (desired, ready, available int32, err error)
+ func (c *Client) KubeDNSIP() string {
+ 	cx, cancel := ctx()
+ 	defer cancel()
+-	s, err := c.cs.CoreV1().Services(DNSNamespace).Get(cx, "kube-dns", metav1.GetOptions{})
++	s, err := c.cs.CoreV1().Services(DNSNamespace).Get(cx, DNSService, metav1.GetOptions{})
+ 	if err != nil {
+ 		return ""
+ 	}
