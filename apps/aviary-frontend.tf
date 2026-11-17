@@ -361,6 +361,14 @@ resource "kubernetes_role" "aviary_frontend_self" {
     resource_names = ["aviary-claude"]
     verbs          = ["get", "update", "delete"]
   }
+  # The Gitea token the lock's admin sync uses (made by hand, see
+  # by-hand/w10/README.md): read only.
+  rule {
+    api_groups     = [""]
+    resources      = ["secrets"]
+    resource_names = ["aviary-gitea-sync"]
+    verbs          = ["get"]
+  }
   rule {
     api_groups = [""]
     resources  = ["secrets"]

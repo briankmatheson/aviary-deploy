@@ -10,6 +10,31 @@
 # harbor. So the chart's own ingress stays disabled and the default ClusterIP
 # http service is used as-is. SSH can't ride the HTTP gateway, so it gets its
 # own LoadBalancer IP.
+# gitea_admin's password lives in a Secret the chart reads (admin.existingSecret),
+# not in the Deployment where anything that may read Deployments could see it
+# (the landing page may). The namespace is made here so the Secret can exist
+# before the chart.
+resource "kubectl_manifest" "gitea_namespace" {
+  yaml_body = <<-EOF
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ${var.ns_prefix}gitea
+  EOF
+}
+
+resource "kubernetes_secret" "gitea_admin" {
+  metadata {
+    name      = "gitea-admin-secret"
+    namespace = "${var.ns_prefix}gitea"
+  }
+  data = {
+    username = "gitea_admin"
+    password = var.gitea_admin_password
+  }
+  depends_on = [kubectl_manifest.gitea_namespace]
+}
+
 resource "helm_release" "gitea" {
   name             = "gitea"
   chart            = "gitea"
@@ -20,13 +45,22 @@ resource "helm_release" "gitea" {
   # yamlencode() guarantees valid, correctly-nested YAML. The previous flat
   # "admin.password: ..." form was parsed by Helm as literal dotted keys (not
   # nesting), so none of these settings actually reached the chart.
+  # The bundled Postgres's superuser password: the chart makes up a new one on
+  # every upgrade unless it is given, so give the one it already has (the
+  # gitea-postgresql Secret) once known.
+  set_sensitive = var.gitea_postgres_password == "" ? [] : [{
+    name  = "postgresql.auth.postgresPassword"
+    value = var.gitea_postgres_password
+  }]
+
   values = [yamlencode({
     global = {
       storageClass = var.global_storage_class
     }
     gitea = {
       admin = {
-        password = var.gitea_admin_password
+        existingSecret = kubernetes_secret.gitea_admin.metadata[0].name
+        password       = ""
       }
       config = {
         server = {
@@ -114,7 +148,7 @@ resource "helm_release" "gitea" {
   })]
 
   # The pod mounts the bundle's ConfigMap and cannot start without it.
-  depends_on = [kubectl_manifest.ca_bundle]
+  depends_on = [kubectl_manifest.ca_bundle, kubernetes_secret.gitea_admin]
 }
 
 # Exposure handled by the shared Envoy Gateway (gitea.<base_domain> -> gitea-http:3000).

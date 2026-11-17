@@ -103,3 +103,15 @@ application's id and secret, `oidc_scope: openid,profile,email`,
 ## Chat model's briefing
 
 The `briefing` key of ConfigMap `aviary/aviary-chat`.
+
+## Gitea token for the landing page's admin sync (2026-11-17)
+
+Secret `aviary/aviary-gitea-sync` (key `token`): a Gitea access token named
+`aviary-frontend-sync`, owned by gitea_admin, scopes `read:admin` and
+`write:organization`. It can list users and edit teams; it cannot read a
+repository. The landing page uses it to set `aviary:admins` to the site
+administrators when an admin locks or unlocks a part of the page. To make it
+again: gitea_admin > Settings > Applications > Generate token with those two
+scopes, then
+`kubectl -n aviary create secret generic aviary-gitea-sync --from-literal=token=<token>`.
+
