@@ -1,0 +1,8 @@
+# node0's own pod logs, into the Loki beside it.
+config:
+  clients:
+  - url: http://loki.loki.svc.cluster.local:3100/loki/api/v1/push
+    external_labels: {cluster: node0}
+resources: {requests: {cpu: 20m, memory: 48Mi}, limits: {memory: 192Mi}}
+tolerations:
+- {operator: Exists}
