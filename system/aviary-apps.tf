@@ -97,8 +97,8 @@ resource "kubectl_manifest" "aviaryapp" {
 
 # AviaryConfig: the landing page's page-wide settings, in one object named
 # "aviary". What it leaves out, the page takes from its environment. The page
-# writes the model chosen in its whiteboard to the object's status, which
-# this stack does not manage.
+# writes the model chosen in its whiteboard, and the System lock, to the
+# object's status, which this stack does not manage.
 resource "kubectl_manifest" "aviaryconfig_crd" {
   yaml_body = <<EOF
 apiVersion: apiextensions.k8s.io/v1
@@ -125,6 +125,8 @@ spec:
         - { name: Admin-Team, type: string, jsonPath: .spec.admin.team }
         - { name: Max-Pods, type: integer, jsonPath: .spec.scale.maxPods }
         - { name: Model, type: string, jsonPath: .status.chat.model }
+        - { name: Locked, type: boolean, jsonPath: .status.lock.locked }
+        - { name: Locked-By, type: string, jsonPath: .status.lock.by }
       schema:
         openAPIV3Schema:
           type: object
@@ -176,6 +178,24 @@ spec:
                       description: The model chosen in the whiteboard's menu. Written by the landing page.
                       type: string
                       maxLength: 300
+                lock:
+                  description: The System lock. Written by the landing page when an admin locks or unlocks; while locked, nobody can change a System app, delete a node or change the API key from the page.
+                  type: object
+                  properties:
+                    locked:
+                      type: boolean
+                    by:
+                      description: Who locked or unlocked last.
+                      type: string
+                      maxLength: 200
+                    at:
+                      description: When, in UTC.
+                      type: string
+                      maxLength: 40
+                    sync:
+                      description: What the admin sync run at that moment did.
+                      type: string
+                      maxLength: 500
 EOF
 }
 
