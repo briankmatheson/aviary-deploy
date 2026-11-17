@@ -1,0 +1,63 @@
+# Keeps the Gitea team aviary:admins equal to Gitea's site administrators
+# (is_admin), so the gateway's gates -- which can only see teams -- follow the
+# flag. The token (Secret aviary-admin-sync, key "token") belongs to
+# gitea_admin and is scoped read:admin + write:organization. See README.md.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aviary-admin-sync
+  namespace: aviary-gitea
+spec:
+  schedule: "*/2 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 90
+      ttlSecondsAfterFinished: 600
+      template:
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: sync
+              image: python:3.13-alpine
+              command: [python3, /sync/sync.py]
+              env:
+                - name: GITEA_URL
+                  value: http://gitea-http.aviary-gitea.svc.cluster.local:3000
+                - name: ADMIN_TEAM
+                  value: aviary:admins
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 96Mi
+              volumeMounts:
+                - name: sync
+                  mountPath: /sync
+                  readOnly: true
+                - name: token
+                  mountPath: /token
+                  readOnly: true
+          volumes:
+            - name: sync
+              configMap:
+                name: aviary-admin-sync
+            - name: token
+              secret:
+                secretName: aviary-admin-sync
