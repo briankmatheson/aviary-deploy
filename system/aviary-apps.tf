@@ -121,7 +121,8 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
-        - { name: Session, type: integer, jsonPath: .spec.session.minutes, description: minutes a sign-in lasts }
+        - { name: Idle, type: integer, jsonPath: .spec.session.minutes, description: minutes a sign-in lasts with nothing done }
+        - { name: Max, type: integer, jsonPath: .spec.session.maxMinutes, description: minutes a sign-in lasts at most }
         - { name: Admin-Team, type: string, jsonPath: .spec.admin.team }
         - { name: Max-Pods, type: integer, jsonPath: .spec.scale.maxPods }
         - { name: Model, type: string, jsonPath: .status.chat.model }
@@ -141,10 +142,15 @@ spec:
                   type: object
                   properties:
                     minutes:
-                      description: How long a sign-in to the landing page lasts before it goes back through Gitea. Gitea cannot tell the page that someone logged out or stopped being an administrator, so this is how long that can take to show.
+                      description: The idle timer. A sign-in to the landing page runs out after this many minutes with no activity (clicks, keys, actions; not the page's background polling), then goes back through Gitea.
                       type: integer
                       minimum: 1
                       maximum: 1440
+                    maxMinutes:
+                      description: The most a sign-in lasts from signing in, however active. Gitea cannot tell the page that someone logged out or stopped being an administrator, so this is the longest that can take to show.
+                      type: integer
+                      minimum: 5
+                      maximum: 10080
                 admin:
                   type: object
                   properties:
@@ -206,7 +212,7 @@ resource "kubectl_manifest" "aviaryconfig" {
     metadata   = { name = "aviary" }
     spec = merge(
       {
-        session = { minutes = var.aviary_session_minutes }
+        session = { minutes = var.aviary_session_minutes, maxMinutes = var.aviary_session_max_minutes }
         scale   = { maxPods = var.aviary_scale_max_pods }
       },
       var.aviary_admin_team != "" ? { admin = { team = var.aviary_admin_team } } : {},
