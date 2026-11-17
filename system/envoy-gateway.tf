@@ -48,7 +48,11 @@ locals {
   cloudbeaver_vhost = var.cloudbeaver_admin_password != "" ? {
     cloudbeaver = { host = "cloudbeaver.${var.base_domain}", namespace = "${var.ns_prefix}cloudbeaver", service = "cloudbeaver", port = 8978, tls = "cloudbeaver-tls", group = "apps" }
   } : {}
-  vhosts = merge(local.axigen_vhost, local.jitsi_vhost, local.cloudbeaver_vhost, {
+  # Garage's web UI (system/garage.tf) is there only once its admin token is set.
+  garage_vhost = var.garage_admin_token != "" ? {
+    garage = { host = "garage.${var.base_domain}", namespace = "${var.ns_prefix}garage", service = "garage-webui", port = 3909, tls = "garage-tls", group = "system" }
+  } : {}
+  vhosts = merge(local.axigen_vhost, local.jitsi_vhost, local.cloudbeaver_vhost, local.garage_vhost, {
     argo       = { host = "argo.${var.base_domain}", namespace = "${var.ns_prefix}argo", service = "argo-argocd-server", port = 80, tls = "argo-tls", group = "apps" }
     aviary     = { host = var.base_domain, namespace = "aviary", service = "aviary-frontend", port = 8086, tls = "aviary-tls", group = "apps" }
     bash       = { host = "bash.${var.base_domain}", namespace = "default", service = "cloudshell-aviary-bash", port = 7681, tls = "bash-tls", group = "system" }
@@ -297,6 +301,7 @@ resource "kubectl_manifest" "httproute" {
     helm_release.harbor,
     helm_release.velero,
     helm_release.kubeshark,
+    helm_release.garage,
     helm_release.headlamp,
     helm_release.gitea,
     helm_release.mattermost,
