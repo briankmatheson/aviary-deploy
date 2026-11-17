@@ -527,9 +527,15 @@ variable "aviary_oauth_admin_only" {
 # --- Aviary landing page settings (the AviaryConfig object) ---
 
 variable "aviary_session_minutes" {
-  description = "How long a sign-in to the landing page lasts before it goes back through Gitea (1-1440)."
+  description = "The landing page's idle timer: a sign-in runs out after this many minutes with nothing done (1-1440)."
   type        = number
   default     = 30
+}
+
+variable "aviary_session_max_minutes" {
+  description = "The most a landing-page sign-in lasts from signing in, however active (5-10080). aviary_session_minutes is the idle timer within it."
+  type        = number
+  default     = 720
 }
 
 variable "aviary_scale_max_pods" {
