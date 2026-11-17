@@ -1,0 +1,275 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gitea
+  namespace: aviary-gitea
+spec:
+  hostnames:
+  - gitea.aviary.mesh.bmath.nyc
+  - gitea.xdebbie.org
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-gitea
+  rules:
+  - filters:
+    - requestRedirect:
+        hostname: aviary.mesh.bmath.nyc
+        path:
+          replaceFullPath: /favicon.ico
+          type: ReplaceFullPath
+        scheme: https
+        statusCode: 302
+      type: RequestRedirect
+    matches:
+    - path:
+        type: Exact
+        value: /assets/img/favicon.svg
+    - path:
+        type: Exact
+        value: /assets/img/favicon.png
+    - path:
+        type: Exact
+        value: /favicon.ico
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: gitea-http
+      port: 3000
+      weight: 1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    aviary/group: apps
+  name: mail
+  namespace: aviary-axigen
+spec:
+  hostnames:
+  - mail.aviary.mesh.bmath.nyc
+  - mail.xdebbie.org
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-mail
+  rules:
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: axigen-mail-wm-direct
+      port: 443
+      weight: 1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    aviary/group: system
+  name: kubeshark
+  namespace: aviary-kubeshark
+spec:
+  hostnames:
+  - kubeshark.aviary.mesh.bmath.nyc
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-kubeshark
+  rules:
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: kubeshark-front
+      port: 80
+      weight: 1
+    filters:
+    - requestHeaderModifier:
+        remove:
+        - X-Aviary-Id-Token
+      type: RequestHeaderModifier
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    aviary/group: apps
+  name: cloudbeaver
+  namespace: aviary-cloudbeaver
+spec:
+  hostnames:
+  - cloudbeaver.aviary.mesh.bmath.nyc
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-cloudbeaver
+  rules:
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: cloudbeaver
+      port: 8978
+      weight: 1
+    filters:
+    - requestHeaderModifier:
+        remove:
+        - X-Aviary-Id-Token
+        - X-Role
+        set:
+        - name: X-Team
+          value: user
+      type: RequestHeaderModifier
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: headlamp
+  namespace: aviary-headlamp
+spec:
+  hostnames:
+  - headlamp.aviary.mesh.bmath.nyc
+  - headlamp.xdebbie.org
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-headlamp
+  rules:
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: headlamp
+      port: 80
+      weight: 1
+    filters:
+    - requestHeaderModifier:
+        remove:
+        - X-Aviary-Id-Token
+      type: RequestHeaderModifier
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: velero
+  namespace: aviary-velero
+spec:
+  hostnames:
+  - velero.aviary.mesh.bmath.nyc
+  - velero.xdebbie.org
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-velero
+  rules:
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: velero
+      port: 8085
+      weight: 1
+    filters:
+    - requestHeaderModifier:
+        remove:
+        - X-Aviary-Id-Token
+      type: RequestHeaderModifier
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: aviary-grafana
+spec:
+  hostnames:
+  - grafana.aviary.mesh.bmath.nyc
+  - grafana.xdebbie.org
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-grafana
+  rules:
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: grafana
+      port: 80
+      weight: 1
+    filters:
+    - requestHeaderModifier:
+        remove:
+        - X-Aviary-Id-Token
+      type: RequestHeaderModifier
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    aviary/group: system
+  name: bash
+  namespace: default
+spec:
+  hostnames:
+  - bash.aviary.mesh.bmath.nyc
+  - bash.xdebbie.org
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: aviary
+    namespace: envoy-gateway
+    sectionName: https-bash
+  rules:
+  - backendRefs:
+    - group: ''
+      kind: Service
+      name: cloudshell-aviary-bash
+      port: 7681
+      weight: 1
+    filters:
+    - requestHeaderModifier:
+        remove:
+        - X-Aviary-Id-Token
+      type: RequestHeaderModifier
+    matches:
+    - path:
+        type: PathPrefix
+        value: /

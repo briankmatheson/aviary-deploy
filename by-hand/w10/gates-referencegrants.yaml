@@ -1,0 +1,120 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: oidc-from-aviary-cloudbeaver
+  namespace: aviary-gitea
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: aviary-cloudbeaver
+  to:
+  - group: ''
+    kind: Service
+    name: gitea-http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: oidc-from-aviary-grafana
+  namespace: aviary-gitea
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: aviary-grafana
+  to:
+  - group: ''
+    kind: Service
+    name: gitea-http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: oidc-from-aviary-headlamp
+  namespace: aviary-gitea
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: aviary-headlamp
+  to:
+  - group: ''
+    kind: Service
+    name: gitea-http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: oidc-from-aviary-jitsi
+  namespace: aviary-gitea
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: aviary-jitsi
+  to:
+  - group: ''
+    kind: Service
+    name: gitea-http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: oidc-from-aviary-kubeshark
+  namespace: aviary-gitea
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: aviary-kubeshark
+  to:
+  - group: ''
+    kind: Service
+    name: gitea-http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: oidc-from-aviary-rustpad
+  namespace: aviary-gitea
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: aviary-rustpad
+  to:
+  - group: ''
+    kind: Service
+    name: gitea-http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: oidc-from-aviary-velero
+  namespace: aviary-gitea
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: aviary-velero
+  to:
+  - group: ''
+    kind: Service
+    name: gitea-http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: oidc-from-default
+  namespace: aviary-gitea
+spec:
+  from:
+  - group: gateway.envoyproxy.io
+    kind: SecurityPolicy
+    namespace: default
+  to:
+  - group: ''
+    kind: Service
+    name: gitea-http

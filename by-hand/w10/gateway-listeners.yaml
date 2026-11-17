@@ -1,0 +1,28 @@
+# Listeners added to Gateway envoy-gateway/aviary (spec.listeners)
+- allowedRoutes:
+    namespaces:
+      from: All
+  hostname: kubeshark.aviary.mesh.bmath.nyc
+  name: https-kubeshark
+  port: 443
+  protocol: HTTPS
+  tls:
+    certificateRefs:
+    - group: ''
+      kind: Secret
+      name: kubeshark-tls
+    mode: Terminate
+- allowedRoutes:
+    namespaces:
+      from: All
+  hostname: cloudbeaver.aviary.mesh.bmath.nyc
+  name: https-cloudbeaver
+  port: 443
+  protocol: HTTPS
+  tls:
+    certificateRefs:
+    - group: ''
+      kind: Secret
+      name: cloudbeaver-tls
+    mode: Terminate
+
