@@ -1,0 +1,20 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gateway-only
+  namespace: aviary-cloudbeaver
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: envoy-gateway-system
+    ports:
+    - port: 8978
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: cloudbeaver
+  policyTypes:
+  - Ingress
