@@ -160,6 +160,33 @@ variable "drone_admin_user" {
   default     = "bmath"
 }
 
+variable "drone_db_password" {
+  description = "Password of Drone's Postgres database. Setting it switches the Drone server to HA mode: drone_server_replicas pods sharing Postgres and Valkey instead of one pod on SQLite. Needs drone_valkey_password and drone_cookie_secret too."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "drone_valkey_password" {
+  description = "Password of the Valkey the Drone servers coordinate through (HA mode)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "drone_cookie_secret" {
+  description = "Session-signing secret shared by every Drone server (HA mode), e.g. openssl rand -hex 32."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "drone_server_replicas" {
+  description = "How many Drone server pods in HA mode (drone_db_password set). Without HA there is always one."
+  type        = number
+  default     = 3
+}
+
 variable "drone_runner_replicas" {
   description = "How many Drone runner pods. Each takes builds from the server independently."
   type        = number

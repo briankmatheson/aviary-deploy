@@ -1,0 +1,60 @@
+# What three Drone servers share: a Postgres database and a Redis-compatible
+# store (the build queue, runner events, log streaming, cancellations).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: drone-pg
+  namespace: aviary-drone
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie
+  storage:
+    size: 5Gi
+    storageClass: abe-csi-sc
+  bootstrap:
+    initdb:
+      database: drone
+      owner: drone
+  resources:
+    requests: { cpu: 50m, memory: 256Mi }
+    limits: { memory: 512Mi }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone-valkey
+  namespace: aviary-drone
+  labels: { app.kubernetes.io/name: drone-valkey }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app.kubernetes.io/name: drone-valkey }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: drone-valkey }
+    spec:
+      automountServiceAccountToken: false
+      securityContext: { runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, fsGroup: 999, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: valkey
+          image: valkey/valkey:8.1-alpine
+          args: ["--requirepass", "$(VALKEY_PASSWORD)", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+          env:
+            - name: VALKEY_PASSWORD
+              valueFrom: { secretKeyRef: { name: drone-ha, key: valkey-password } }
+          ports: [{ containerPort: 6379 }]
+          readinessProbe: { tcpSocket: { port: 6379 }, periodSeconds: 5 }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          resources: { requests: { cpu: 10m, memory: 32Mi }, limits: { memory: 192Mi } }
+          volumeMounts: [{ name: data, mountPath: /data }]
+      volumes: [{ name: data, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drone-valkey
+  namespace: aviary-drone
+spec:
+  selector: { app.kubernetes.io/name: drone-valkey }
+  ports: [{ port: 6379, targetPort: 6379 }]

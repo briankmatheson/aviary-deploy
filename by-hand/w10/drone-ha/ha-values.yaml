@@ -1,0 +1,17 @@
+# Three servers sharing Postgres and Valkey (settings in Secret drone-ha).
+replicaCount: 3
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate: { maxUnavailable: 1, maxSurge: 1 }
+persistentVolume:
+  enabled: false
+extraSecretNamesForEnvFrom:
+  - drone-ha
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels: { app.kubernetes.io/name: drone, app.kubernetes.io/component: server }
