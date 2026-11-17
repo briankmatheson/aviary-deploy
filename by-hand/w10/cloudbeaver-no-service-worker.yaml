@@ -1,0 +1,53 @@
+# CloudBeaver registers a service worker (/service-worker.js). Behind the
+# Gitea gate it breaks sign-in: once the gate's session has run out, the
+# worker fetches the page itself (Sec-Fetch-Dest: empty), the gate may not
+# redirect such a request, and the browser is shown "OAuth flow failed."
+# This route answers /service-worker.js, outside the gate, with a worker that
+# removes itself: the browser's next update check replaces CloudBeaver's
+# worker with it, and from then on page loads go to the gate as navigations.
+# CloudBeaver works without its worker (it only caches).
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: HTTPRouteFilter
+metadata:
+  name: no-service-worker
+  namespace: aviary-cloudbeaver
+spec:
+  directResponse:
+    statusCode: 200
+    contentType: application/javascript
+    body:
+      type: Inline
+      inline: |
+        // Aviary: this site runs without a service worker (see the gateway route cloudbeaver-sw).
+        self.addEventListener('install', function () { self.skipWaiting(); });
+        self.addEventListener('activate', function (e) {
+          e.waitUntil(self.registration.unregister().then(function () {
+            return caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); });
+          }));
+        });
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cloudbeaver-sw
+  namespace: aviary-cloudbeaver
+  labels:
+    aviary/group: apps
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: aviary
+      namespace: envoy-gateway
+      sectionName: https-cloudbeaver
+  hostnames: [cloudbeaver.aviary.mesh.bmath.nyc]
+  rules:
+    - matches:
+        - path: { type: Exact, value: /service-worker.js }
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - { name: Cache-Control, value: no-store }
+        - type: ExtensionRef
+          extensionRef: { group: gateway.envoyproxy.io, kind: HTTPRouteFilter, name: no-service-worker }
