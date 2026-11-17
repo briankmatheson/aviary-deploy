@@ -185,6 +185,7 @@ variable "drone_server_replicas" {
   description = "How many Drone server pods in HA mode (drone_db_password set). Without HA there is always one."
   type        = number
   default     = 3
+}
 
 variable "drone_runner_replicas" {
   description = "How many Drone runner pods. Each takes builds from the server independently."
