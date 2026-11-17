@@ -41,6 +41,13 @@ resource "kubernetes_cluster_role" "aviary_frontend" {
     resources  = ["nodes"]
     verbs      = ["get", "list"]
   }
+  # AviaryApp objects (system/aviary-apps.tf): each tile's description, group,
+  # and further namespaces.
+  rule {
+    api_groups = ["aviary.xdebbie.org"]
+    resources  = ["aviaryapps"]
+    verbs      = ["get", "list", "watch"]
+  }
 }
 
 resource "kubernetes_cluster_role_binding" "aviary_frontend" {
