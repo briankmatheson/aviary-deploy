@@ -25,6 +25,7 @@ Terraform/OpenTofu configuration is grouped by role:
   - `harbor` — container registry (`harbor.<base_domain>`)
   - `velero` — backup/restore (`velero.<base_domain>`)
   - `kubeshark` — live view of traffic between pods (`kubeshark.<base_domain>`)
+  - `garage` — S3 object storage, with a web UI (`garage.<base_domain>`); off until `garage_admin_token` is set
 - `data/` — stateful services
   - `gitea` — self-hosted git (`gitea.<base_domain>`, ssh via `ssh.gitea.local`)
   - `postgres` — Percona and Zalando Postgres operators, plus the Zalando UI (`postgres-ui.<base_domain>`)

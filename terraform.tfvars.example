@@ -66,6 +66,11 @@ drone_rpc_secret            = "CHANGE_ME"
 grafana_admin_password = "CHANGE_ME"
 # grafana_namespace    = "grafana"
 
+# ================================ Garage ================================
+
+# garage_admin_token = "CHANGE_ME"   # openssl rand -hex 32; unset leaves Garage out
+# garage_data_size   = 20
+
 # ============================== CloudBeaver ==============================
 
 cloudbeaver_admin_password = "CHANGE_ME"

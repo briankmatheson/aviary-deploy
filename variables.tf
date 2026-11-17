@@ -303,6 +303,21 @@ variable "cloudbeaver_pvc_size" {
   default     = 2
 }
 
+# --- Garage ---
+
+variable "garage_admin_token" {
+  description = "Bearer token of Garage's admin API (e.g. openssl rand -hex 32). Empty leaves Garage out."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "garage_data_size" {
+  description = "Size of each Garage node's data volume, in GiB (there are three, holding three copies)."
+  type        = number
+  default     = 20
+}
+
 # --- Velero ---
 
 variable "velero_credentials_secret" {
