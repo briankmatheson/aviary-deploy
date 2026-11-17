@@ -130,6 +130,9 @@ spec:
       containers:
         - name: aviary-frontend
           image: ${var.aviary_frontend_image}
+          # The image is usually a moving tag (:latest), rolled out by restarting:
+          # without this a node reuses whichever :latest it pulled last, however old.
+          imagePullPolicy: Always
           ports:
             - containerPort: 8086
           env:
